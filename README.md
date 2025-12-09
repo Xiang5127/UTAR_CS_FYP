@@ -1,180 +1,77 @@
-## Streamline — GPS-Accurate Photo Capture with EXIF
+## Streamline — GPS-Accurate Photo Capture (Concise Guide)
 
-Streamline is a mobile app built with Expo/React Native to capture photos that are precisely tagged with GPS coordinates and EXIF metadata. It ensures a reliable GPS lock before capturing, merges coordinates into EXIF, and prepares an upload payload for a backend service.
+Mobile app (Expo/React Native) to capture photos with reliable GPS and embedded EXIF, then save to device gallery.
 
-Current status: The UI, camera flow, GPS watcher, and EXIF merge logic are implemented. EXIF extraction is designed to be handled by a (pluggable) backend endpoint; a placeholder URL is used until the backend is connected.
+### Key modules
+- Camera/UI: `app/camera/index.tsx`
+- Hooks: `hooks/use-location-watcher.ts`, `hooks/use-camera-capture.ts`
+- EXIF + gallery utils: `utils/exif-processor.ts`
+- Types: `types/*.ts`
 
-### What this project is trying to achieve
-- Accurate, repeatable field photo capture for logistics/inspection workflows
-- Enforce GPS accuracy threshold before allowing capture (default < 10 m)
-- Attach/merge EXIF + GPS data to the photo
-- Provide a clean, modular foundation (hooks/utilities) for integrating an API
+### Core functions
+- `burnExifAndSaveToGallery(uri, exif, albumName?)` — writes EXIF via `@lodev09/react-native-exify` then saves with `expo-media-library` (dynamic import, permission‑aware). Returns saved asset `uri`.
+- `useCameraCapture(latestCoordinateRef)` — takes a photo and snapshots the latest GPS coordinate.
+- `useLocationWatcher()` — foreground GPS watcher; exposes `coordinate`, `error`, `latestCoordinateRef`.
 
----
+### Install & run
+- Install deps: `npm install`
+- Start Metro: `npx expo start`
 
-## Features
-- Live GPS watcher using `expo-location` with `BestForNavigation` accuracy
-  - 1s/1m updates; on-screen accuracy badge with color states (green/yellow/red)
-  - Capture is disabled until GPS accuracy is below 10 meters (configurable in code)
-- Camera UI using `expo-camera` with a simple overlay and guidance lines/text
-- EXIF metadata processing utility designed to call a Node.js backend
-  - If backend extraction fails/unavailable, falls back to minimal EXIF + GPS
-- Modular hooks
-  - `useLocationWatcher` — warm GPS, keep latest reading in a ref for instant snapshot
-  - `useCameraCapture` — capture photo and pair it with the latest GPS reading
-- Typed data models for camera, EXIF, and location
+Native modules (required for EXIF write + gallery save):
+- Install: `npx expo install expo-media-library @lodev09/react-native-exify`
+- Run on dev client/EAS (Expo Go won’t work for these):
+  - Android: `npx expo run:android`
+  - iOS (macOS): `npx expo run:ios` or `eas build --profile development`
 
----
+### Minimum app config
+- iOS `app.json -> ios.infoPlist` includes `NSPhotoLibraryUsageDescription`, `NSPhotoLibraryAddUsageDescription`, `NSCameraUsageDescription`, location descriptions.
+- Plugins: `expo-media-library`, `expo-location`, `expo-camera`.
 
-## Quick start
+### Environment
+- No backend is required. All EXIF writing is performed on device.
 
-Prerequisites:
-- Node.js (LTS) and a package manager (npm)
-- Android Studio (emulator) or Xcode (simulator), or a physical device with GPS
-- Expo Go for quick previews, or a dev build for full functionality
+### Capture flow (high level)
+1) `useLocationWatcher` warms GPS; latest coordinate kept in a ref.
+2) `useCameraCapture` takes picture using `expo-camera`.
+3) Minimal EXIF is built locally with GPS fields (and timestamp).
+4) `burnExifAndSaveToGallery` writes EXIF to file, requests permission, saves to gallery (album e.g., "Streamline"). Use returned asset `uri`.
+5) Build payload and send to API (replace `sendToAPI` placeholder) — optional.
 
-Install dependencies:
+### Important snippets
+- Burn EXIF + save to gallery
+```ts
+import { burnExifAndSaveToGallery } from '@/utils/exif-processor';
 
-```bash
-npm install
+const saved = await burnExifAndSaveToGallery(photo.uri, exif, 'Streamline');
+const savedUri = saved.uri; // use this in payload/UI
 ```
 
-Start the app:
-
-```bash
-npx expo start
+- Minimal EXIF (no backend) to write GPS
+```ts
+const exif = {
+  GPSLatitude: lat,
+  GPSLongitude: lon,
+  GPSAltitude: altitude ?? undefined,
+  GPSAltitudeRef: altitude !== undefined && altitude < 0 ? 1 : 0,
+  DateTimeOriginal: new Date(timestamp).toISOString(),
+};
 ```
 
-Then press `a` (Android), `i` (iOS), or scan the QR with the Expo Go app.
-
-Permissions:
-- The app requests Camera and Foreground Location permissions at runtime.
-- For real devices, ensure Location Services are enabled and you have a clear sky view for a good GPS lock.
-
----
-
-## Environment variables (EXIF backend)
-`utils/exif-processor.ts` calls an endpoint to extract EXIF data server-side to keep the client lightweight.
-
-- Public runtime variable: `EXPO_PUBLIC_EXIF_API_URL`
-  - Default (if not set): `http://localhost:3000/api/exif`
-  - Set it via an `.env` file or your CI/EAS environment.
-
-Example `.env`:
-
-```env
-EXPO_PUBLIC_EXIF_API_URL=https://your-backend.example.com/api/exif
+- Dynamic import safety (inside `burnExifAndSaveToGallery`)
+```ts
+let MediaLibrary: typeof import('expo-media-library') | null = null;
+try { MediaLibrary = await import('expo-media-library'); }
+catch { return { uri: writtenUri }; }
 ```
 
-Notes:
-- Variables prefixed with `EXPO_PUBLIC_` are exposed to the client bundle by design.
-- Make sure your backend accepts `multipart/form-data` with the field name `photo`.
+### Troubleshooting
+- “Could not find 'expo-media-library'” → run `npx expo install expo-media-library` and rebuild a Dev Client/EAS app. Web/Expo Go are not supported for native EXIF write.
+- Permission denied when saving → the function returns the local file `uri`; photo may not appear in gallery.
+- GPS accuracy too high (red/yellow badge) → wait for a better lock or go outdoors.
 
----
+### Scripts
+- `npx expo start` — start dev server
+- `npm run android` / `npm run ios` — launch platform target
 
-## How it works (high level)
-1. Home screen (`app/index.tsx`) navigates to the Camera screen.
-2. `useLocationWatcher` starts immediately and warms up GPS; the latest reading is stored in a ref for instant access.
-3. `useCameraCapture` takes a picture with `expo-camera` and snapshots the latest GPS coordinate.
-4. `processEXIFMetadata(photoUri)` POSTs the image to the backend for EXIF extraction. If it fails, we fall back to minimal EXIF.
-5. GPS is merged into EXIF via `mergeGPSIntoEXIF` before building an upload payload.
-6. A placeholder `sendToAPI` logs the final payload; replace it with your real API integration.
-
-Example capture payload shape (logged to console today):
-
-```json
-{
-  "photoUri": "file:///.../photo.jpg",
-  "location": {
-    "latitude": 3.14159,
-    "longitude": 101.68685,
-    "accuracy": 4.8,
-    "altitude": 50.2,
-    "timestamp": 1733400000000
-  },
-  "exif": {
-    "GPSLatitude": 3.14159,
-    "GPSLongitude": 101.68685,
-    "GPSAltitude": 50.2,
-    "GPSAltitudeRef": 0,
-    "DateTimeOriginal": "2025-12-05T09:00:00.000Z"
-  }
-}
-```
-
----
-
-## Project structure
-
-Top-level folders and key files:
-
-```
-.
-├─ app/                      # Expo Router (file-based navigation)
-│  ├─ index.tsx              # Home screen (Start Capturing button)
-│  └─ camera/
-│     └─ index.tsx           # Camera screen, overlay, capture flow, GPS lock
-│
-├─ hooks/                    # Reusable logic hooks
-│  ├─ use-location-watcher.ts   # Foreground GPS watcher (BestForNavigation)
-│  ├─ use-camera-capture.ts     # Camera capture + snapshot latest GPS
-│  └─ usePreciseLocation.ts     # DEPRECATED placeholder (do not use)
-│
-├─ utils/
-│  └─ exif-processor.ts      # EXIF extraction via backend + GPS merge helper
-│
-├─ types/                    # Shared TypeScript types (EXIF, location, camera)
-│  ├─ exif.types.ts          # EXIFMetadata, EXIFProcessingResult
-│  ├─ location.types.ts      # LocationCoordinate, LocationWatcherState
-│  └─ camera.types.ts        # CameraCaptureResult, CameraState
-│
-├─ assets/                   # Images, fonts, etc.
-│
-├─ global.css                # Global styles (NativeWind/Tailwind integration)
-├─ tailwind.config.js        # Tailwind config for NativeWind
-├─ nativewind-env.d.ts       # NativeWind type helpers
-├─ expo-env.d.ts             # Typed environment variable access
-├─ app.json                  # Expo app config
-├─ babel.config.js           # Babel configuration
-├─ metro.config.js           # Metro bundler config
-├─ tsconfig.json             # TypeScript configuration
-├─ eslint.config.js          # ESLint configuration
-└─ package.json              # Scripts and dependencies
-```
-
----
-
-## Tech stack
-- Expo + React Native
-- Expo Router
-- `expo-camera` and `expo-location`
-- TypeScript
-- NativeWind/Tailwind for styling
-
----
-
-## Development tips
-- If the GPS badge stays gray/red, wait outdoors or near a window; accuracy improves with time and clear sky.
-- On emulators, GPS accuracy and altitude may be synthetic; prefer testing on a real device.
-- If EXIF API calls fail, check `EXPO_PUBLIC_EXIF_API_URL` and your backend CORS/logs.
-
----
-
-## Roadmap / TODO
-- Connect real backend and replace `sendToAPI` with a production uploader
-- Offline queue + retry for poor connectivity areas
-- Local photo preview screen and re-take flow
-- Configurable GPS accuracy threshold via settings
-- Annotate captured images with overlays (optional)
-- Add unit/integration tests and CI
-
----
-
-## Scripts
-- `npm install` — install dependencies
-- `npx expo start` — start the dev server
-
----
-
-## License
-This repository currently does not declare a license. Add one if you plan to distribute.
+### License
+No license declared yet.

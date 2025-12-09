@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useLocationWatcher } from '@/hooks/use-location-watcher';
 import { EXIFMetadata } from '@/types/exif.types';
-import { mergeGPSIntoEXIF, processEXIFMetadata } from '@/utils/exif-processor';
+import { burnExifAndSaveToGallery } from '@/utils/exif-processor';
 import { useCameraCapture } from '@/hooks/use-camera-capture';
 
 interface CapturePayload {
@@ -82,44 +82,29 @@ export default function CameraScreen() {
         base64: false,
       });
 
-      // Extract EXIF metadata from photo
-      let exifMetadata: EXIFMetadata | null = null;
+      // Build minimal EXIF metadata locally (no backend extraction)
+      const exifMetadata: EXIFMetadata = {
+        GPSLatitude: location.latitude,
+        GPSLongitude: location.longitude,
+        GPSAltitude: location.altitude ?? undefined,
+        GPSAltitudeRef: location.altitude !== null && location.altitude < 0 ? 1 : 0,
+        DateTimeOriginal: new Date(location.timestamp).toISOString(),
+      };
+
+      // Burn EXIF into the captured image and save into the gallery
+      // Note: On iOS this may create a new Asset file. Use the returned URI.
+      let savedUri = photo.uri;
       try {
-        const exifResult = await processEXIFMetadata(photo.uri);
-        if (exifResult.success && exifResult.metadata) {
-          // Merge GPS coordinates into EXIF metadata
-          exifMetadata = mergeGPSIntoEXIF(
-            exifResult.metadata,
-            location.latitude,
-            location.longitude,
-            location.altitude ?? undefined
-          );
-        } else {
-          console.warn('EXIF extraction failed:', exifResult.error);
-          // Create basic EXIF with GPS data even if extraction failed
-          exifMetadata = {
-            GPSLatitude: location.latitude,
-            GPSLongitude: location.longitude,
-            GPSAltitude: location.altitude ?? undefined,
-            GPSAltitudeRef: location.altitude !== null && location.altitude < 0 ? 1 : 0,
-            DateTimeOriginal: new Date(location.timestamp).toISOString(),
-          };
-        }
-      } catch (exifError) {
-        console.warn('EXIF processing error:', exifError);
-        // Fallback: create basic EXIF with GPS data
-        exifMetadata = {
-          GPSLatitude: location.latitude,
-          GPSLongitude: location.longitude,
-          GPSAltitude: location.altitude ?? undefined,
-          GPSAltitudeRef: location.altitude !== null && location.altitude < 0 ? 1 : 0,
-          DateTimeOriginal: new Date(location.timestamp).toISOString(),
-        };
+        const saved = await burnExifAndSaveToGallery(photo.uri, exifMetadata, 'Streamline');
+        savedUri = saved.uri;
+      } catch (e) {
+        console.warn('Failed to write EXIF and save to gallery:', e);
+        // Fallback: keep original photo URI (may still be on temp cache)
       }
 
-      // Create payload with photo URI, location data, and EXIF metadata
+      // Create payload with saved photo URI, location data, and EXIF metadata
       const payload: CapturePayload = {
-        photoUri: photo.uri,
+        photoUri: savedUri,
         location: {
           latitude: location.latitude,
           longitude: location.longitude,
@@ -133,7 +118,7 @@ export default function CameraScreen() {
       // Send to API (mock function - logs to console)
       sendToAPI(payload);
 
-      Alert.alert('Success', 'Photo captured with GPS and EXIF data!', [
+      Alert.alert('Success', 'Photo captured, EXIF written, and saved to gallery!', [
         {
           text: 'OK',
           onPress: () => router.back(),
