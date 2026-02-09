@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -19,6 +19,7 @@ interface CapturePayload {
     timestamp: number;
   };
   exif: EXIFMetadata | null;
+  verificationMethod: 'precise' | 'override';
 }
 
 /**
@@ -39,37 +40,80 @@ export default function CameraScreen() {
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [isCapturing, setIsCapturing] = useState(false);
+  const [forceCaptureEnabled, setForceCaptureEnabled] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Use the new location watcher hook
   const { coordinate, error, latestCoordinateRef } = useLocationWatcher();
   const location = coordinate;
   const accuracy = coordinate?.accuracy ?? null;
-  const isGPSLocked = accuracy !== null && accuracy < 10;
+  // Traffic light states
+  const isGreen = accuracy !== null && accuracy <= 10; // Forensic Grade
+  const isYellow = accuracy !== null && accuracy > 10 && accuracy <= 50; // Operational Grade
+  const isRed = accuracy === null || accuracy > 50; // Poor Signal
   const errorMsg = error?.message ?? null;
 
   // Use the custom camera capture hook with the watcher's latest coordinate ref
   const { cameraRef, capturePhoto } = useCameraCapture(latestCoordinateRef);
 
-  // Determine badge color based on accuracy
+  // Determine badge color based on accuracy (Traffic Light)
   const getBadgeColor = (): string => {
-    if (accuracy === null) return 'bg-gray-500';
-    if (accuracy < 10) return 'bg-green-500';
-    if (accuracy <= 20) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (isRed) return 'bg-red-500';
+    if (isYellow) return 'bg-yellow-500';
+    if (isGreen) return 'bg-green-500';
+    return 'bg-gray-500';
   };
 
   // Get badge text
   const getBadgeText = (): string => {
-    if (accuracy === null) return 'GPS: --';
-    if (accuracy < 10) return `GPS: ${accuracy.toFixed(1)}m ✓`;
-    if (accuracy <= 20) return `GPS: ${accuracy.toFixed(1)}m`;
+    if (accuracy === null) return 'GPS: -- (No Fix)';
+    if (isGreen) return `GPS: ${accuracy.toFixed(1)}m ✓`;
     return `GPS: ${accuracy.toFixed(1)}m`;
   };
 
+  // Button label based on state and timer
+  const getButtonLabel = (): string => {
+    if (isGreen) return 'Verified Capture';
+    if (!forceCaptureEnabled) return 'Improving Accuracy...';
+    return 'Force Capture (Low Accuracy)';
+  };
+
+  // Fallback Timer Logic: start 5s timer on mount if not Green; clear upon Green
+  useEffect(() => {
+    // Helper to clear any existing timer
+    const clearTimer = () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current as any);
+        timerRef.current = null;
+      }
+    };
+
+    // If we enter Green at any time, clear timer and disable force mode
+    if (isGreen) {
+      clearTimer();
+      setForceCaptureEnabled(false);
+      return;
+    }
+
+    // If not Green and no timer yet, start a 5s timer
+    if (!isGreen && !timerRef.current) {
+      timerRef.current = setTimeout(() => {
+        setForceCaptureEnabled(true);
+        timerRef.current = null;
+      }, 5000);
+    }
+
+    // Cleanup when unmounting
+    return () => {
+      clearTimer();
+    };
+  }, [isGreen]);
+
   const handleCapture = async () => {
-    if (!cameraRef.current || !isGPSLocked || !location) {
-      alert('Camera, GPS lock, or location is not available.');
-      console.log('Error in handleCapture: Not available');
+    const canCapture = !!cameraRef.current && !!location && (isGreen || forceCaptureEnabled);
+    if (!canCapture) {
+      alert('Camera or location not ready, or accuracy still improving.');
+      console.log('Error in handleCapture: Not available or not allowed by accuracy state');
       return;
     }
 
@@ -113,6 +157,7 @@ export default function CameraScreen() {
           timestamp: location.timestamp,
         },
         exif: exifMetadata,
+        verificationMethod: isGreen ? 'precise' : 'override',
       };
 
       // Send to API (mock function - logs to console)
@@ -158,92 +203,90 @@ export default function CameraScreen() {
     );
   }
 
-  return (
-    <View className="flex-1 bg-black">
+    return (
+        <View className="flex-1 bg-black">
 
-      {/* Full screen camera view */}
-      <CameraView
-        ref={cameraRef}
-        style={styles.camera}
-        facing="back"
-        mode="picture"
-      />
+            {/* Full screen camera view */}
+            <CameraView
+                ref={cameraRef}
+                style={styles.camera}
+                facing="back"
+                mode="picture"
+            />
 
-      {/* Overlay split into top and bottom halves with a middle separator line */}
-      <View className="absolute inset-0">
+            {/* Overlay split into top and bottom halves with a middle separator line */}
+            <View className="absolute inset-0">
 
-        {/* Top Half */}
-        <View style={{ flex: 1, paddingTop: insets.top + 8 }} className="relative">
+                {/* Top Half */}
+                <View style={{ flex: 1, paddingTop: insets.top + 8 }} className="relative">
 
-          {/* Optional Border UI */}
-          <View className="absolute bottom-10 right-10 w-8 h-8 border-b-4 border-r-4 border-white/50" />
-          <View className="absolute bottom-10 left-10 w-8 h-8 border-b-4 border-l-4 border-white/50" />
+                    {/* Optional Border UI */}
+                    <View className="absolute bottom-10 right-10 w-8 h-8 border-b-4 border-r-4 border-white/50" />
+                    <View className="absolute bottom-10 left-10 w-8 h-8 border-b-4 border-l-4 border-white/50" />
 
-          {/* GPS meter tracker */}
-          <View className="mx-4">
-            {errorMsg ? (
-              <View className="bg-red-500 px-4 py-2 rounded-lg">
-                <Text className="text-white text-sm font-semibold">{errorMsg}</Text>
-              </View>
-            ) : (
-              <View className={`${getBadgeColor()} px-4 py-2 rounded-lg self-start`}>
-                <Text className="text-white text-sm font-semibold">{getBadgeText()}</Text>
-              </View>
-            )}
-          </View>
+                    {/* GPS meter tracker */}
+                    <View className="mx-4">
+                        {errorMsg ? (
+                            <View className="bg-red-500 px-4 py-2 rounded-lg">
+                                <Text className="text-white text-sm font-semibold">{errorMsg}</Text>
+                            </View>
+                        ) : (
+                            <View className={`${getBadgeColor()} px-4 py-2 rounded-lg self-start`}>
+                                <Text className="text-white text-sm font-semibold">{getBadgeText()}</Text>
+                            </View>
+                        )}
+                    </View>
 
-          {/* Visual Guide Label (Centered in Top Half) */}
-          <View className="absolute inset-0 items-center justify-center pointer-events-box-none">
-              <Text className="text-white text-lg font-bold opacity-70">
-                  CAPTURE BUILDING HERE
-              </Text>
-          </View>
-        </View>
+                    {/* Visual Guide Label (Centered in Top Half) */}
+                    <View className="absolute inset-0 items-center justify-center pointer-events-box-none">
+                        <Text className="text-white text-lg font-bold opacity-70">
+                            CAPTURE BUILDING HERE
+                        </Text>
+                    </View>
+                </View>
 
-        {/* Middle Separator */}
-        <View style={styles.separatorLine} />
+                {/* Middle Separator */}
+                <View style={styles.separatorLine} />
 
-        {/* Bottom Half */}
-        <View style={{ flex: 1, paddingBottom: insets.bottom + 24 }} className="items-center justify-end relative">
+                {/* Bottom Half */}
+                <View style={{ flex: 1, paddingBottom: insets.bottom + 24 }} className="items-center justify-end relative">
 
-            {/* Centered Guide Text */}
-            <View className="absolute inset-0 items-center justify-center mb-20 pointer-events-box-none">
-                <Text className="text-white text-lg font-bold opacity-70 ">
-                    CAPTURE PARCEL HERE
-                </Text>
+                    {/* Centered Guide Text */}
+                    <View className="absolute inset-0 items-center justify-center mb-20 pointer-events-box-none">
+                        <Text className="text-white text-lg font-bold opacity-70 ">
+                            CAPTURE PARCEL HERE
+                        </Text>
+                    </View>
+
+                    <TouchableOpacity
+                        onPress={handleCapture}
+                        disabled={!(isGreen || forceCaptureEnabled) || isCapturing || !location}
+                        className={`w-20 h-20 rounded-full items-center justify-center ${
+                            (isGreen || forceCaptureEnabled) && !isCapturing && location
+                                ? 'bg-white'
+                                : 'bg-gray-500'
+                        }`}
+                        activeOpacity={0.8}>
+                        {isCapturing ? (
+                            <ActivityIndicator size="small" color="#000" />
+                        ) : (
+                            <View className="w-16 h-16 rounded-full border-4 border-gray-800" />
+                        )}
+                    </TouchableOpacity>
+
+                    {/* Helper text */}
+                    <Text className="mt-4 text-white text-sm text-center px-4">
+                        {getButtonLabel()}
+                    </Text>
+
+                    {/* Optional Border/Frame */}
+                    <View className="absolute top-10 left-10 w-8 h-8 border-t-4 border-l-4 border-white/50" />
+                    <View className="absolute top-10 right-10 w-8 h-8 border-t-4 border-r-4 border-white/50" />
+
+                </View>
             </View>
-
-            <TouchableOpacity
-            onPress={handleCapture}
-            disabled={!isGPSLocked || isCapturing || !location}
-            className={`w-20 h-20 rounded-full items-center justify-center ${
-              isGPSLocked && !isCapturing && location
-                ? 'bg-white'
-                : 'bg-gray-500'
-            }`}
-            activeOpacity={0.8}>
-            {isCapturing ? (
-              <ActivityIndicator size="small" color="#000" />
-            ) : (
-              <View className="w-16 h-16 rounded-full border-4 border-gray-800" />
-            )}
-          </TouchableOpacity>
-
-          {/* Helper text */}
-          {!isGPSLocked && (
-            <Text className="mt-4 text-white text-sm text-center px-4">
-              Waiting for GPS lock (accuracy {'<'} 10m required)
-            </Text>
-          )}
-
-            {/* Optional Border/Frame */}
-            <View className="absolute top-10 left-10 w-8 h-8 border-t-4 border-l-4 border-white/50" />
-            <View className="absolute top-10 right-10 w-8 h-8 border-t-4 border-r-4 border-white/50" />
-
         </View>
-      </View>
-    </View>
-  );
+    );
 }
 
 const styles = StyleSheet.create({
