@@ -126,13 +126,33 @@ export default function CameraScreen() {
         base64: false,
       });
 
-      // Build minimal EXIF metadata locally (no backend extraction)
+      // Build EXIF metadata locally (GPS + Timestamp)
+      const capturedAt = new Date(location.timestamp);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      // Standard EXIF date-time format: YYYY:MM:DD HH:mm:ss (local time)
+      const exifDateTime = `${capturedAt.getFullYear()}:${pad(capturedAt.getMonth() + 1)}:${pad(
+        capturedAt.getDate()
+      )} ${pad(capturedAt.getHours())}:${pad(capturedAt.getMinutes())}:${pad(capturedAt.getSeconds())}`;
+      // GPS date/time are recommended to be in UTC
+      const gpsDateStamp = `${capturedAt.getUTCFullYear()}:${pad(capturedAt.getUTCMonth() + 1)}:${pad(
+        capturedAt.getUTCDate()
+      )}`;
+      const gpsTimeStamp = `${pad(capturedAt.getUTCHours())}:${pad(capturedAt.getUTCMinutes())}:${pad(
+        capturedAt.getUTCSeconds()
+      )}`;
+
       const exifMetadata: EXIFMetadata = {
+        // GPS
         GPSLatitude: location.latitude,
         GPSLongitude: location.longitude,
         GPSAltitude: location.altitude ?? undefined,
         GPSAltitudeRef: location.altitude !== null && location.altitude < 0 ? 1 : 0,
-        DateTimeOriginal: new Date(location.timestamp).toISOString(),
+        GPSDateStamp: gpsDateStamp,
+        GPSTimeStamp: gpsTimeStamp,
+        // Timestamps
+        DateTimeOriginal: exifDateTime,
+        DateTimeDigitized: exifDateTime,
+        DateTime: exifDateTime,
       };
 
       // Burn EXIF into the captured image and save into the gallery
