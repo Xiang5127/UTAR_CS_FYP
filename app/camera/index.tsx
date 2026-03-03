@@ -8,32 +8,9 @@ import { useLocationWatcher } from '@/hooks/use-location-watcher';
 import { EXIFMetadata } from '@/types/exif.types';
 import { burnExifAndSaveToGallery } from '@/utils/exif-processor';
 import { useCameraCapture } from '@/hooks/use-camera-capture';
-
-interface CapturePayload {
-  photoUri: string;
-  location: {
-    latitude: number;
-    longitude: number;
-    accuracy: number | null;
-    altitude: number | null;
-    timestamp: number;
-  };
-  exif: EXIFMetadata | null;
-  verificationMethod: 'precise' | 'override';
-}
-
-/**
- * Send payload to API
- * Currently logs to console (replace with actual API call)
- */
-function sendToAPI(payload: CapturePayload): void {
-  console.log('📸 Capture Payload:', JSON.stringify(payload, null, 2));
-  // TODO: Replace with actual API call
-  // await fetch('https://api.example.com/capture', {
-  //   method: 'POST',
-  //   body: JSON.stringify(payload),
-  // });
-}
+import { buildExifFromCoordinate } from '@/utils/exif-builder';
+import { useAccuracySignal } from '@/hooks/use-accuracy-signal';
+import { sendToAPI, CapturePayload } from '@/utils/api';
 
 export default function CameraScreen() {
   const router = useRouter();
@@ -46,37 +23,14 @@ export default function CameraScreen() {
   // Use the new location watcher hook
   const { coordinate, error, latestCoordinateRef } = useLocationWatcher();
   const location = coordinate;
-  const accuracy = coordinate?.accuracy ?? null;
-  // Traffic light states
-  const isGreen = accuracy !== null && accuracy <= 10; // Forensic Grade
-  const isYellow = accuracy !== null && accuracy > 10 && accuracy <= 50; // Operational Grade
-  const isRed = accuracy === null || accuracy > 50; // Poor Signal
+
   const errorMsg = error?.message ?? null;
 
   // Use the custom camera capture hook with the watcher's latest coordinate ref
   const { cameraRef, capturePhoto } = useCameraCapture(latestCoordinateRef);
 
-  // Determine badge color based on accuracy (Traffic Light)
-  const getBadgeColor = (): string => {
-    if (isRed) return 'bg-red-500';
-    if (isYellow) return 'bg-yellow-500';
-    if (isGreen) return 'bg-green-500';
-    return 'bg-gray-500';
-  };
-
-  // Get badge text
-  const getBadgeText = (): string => {
-    if (accuracy === null) return 'GPS: -- (No Fix)';
-    if (isGreen) return `GPS: ${accuracy.toFixed(1)}m ✓`;
-    return `GPS: ${accuracy.toFixed(1)}m`;
-  };
-
-  // Button label based on state and timer
-  const getButtonLabel = (): string => {
-    if (isGreen) return 'Verified Capture';
-    if (!forceCaptureEnabled) return 'Improving Accuracy...';
-    return 'Force Capture (Low Accuracy)';
-  };
+    const accuracy = coordinate?.accuracy ?? null;
+    const { signal, badgeColor, badgeText, buttonLabel, isGreen } = useAccuracySignal(accuracy, forceCaptureEnabled);
 
   // Fallback Timer Logic: start 5s timer on mount if not Green; clear upon Green
   useEffect(() => {
@@ -120,40 +74,14 @@ export default function CameraScreen() {
     try {
       setIsCapturing(true);
 
+        // Capture photo via custom hook
+        const photo = await capturePhoto({
+            quality: 1,
+            base64: false,
+        });
+
       // Capture photo via custom hook
-      const photo = await capturePhoto({
-        quality: 1,
-        base64: false,
-      });
-
-      // Build EXIF metadata locally (GPS + Timestamp)
-      const capturedAt = new Date(location.timestamp);
-      const pad = (n: number) => String(n).padStart(2, '0');
-      // Standard EXIF date-time format: YYYY:MM:DD HH:mm:ss (local time)
-      const exifDateTime = `${capturedAt.getFullYear()}:${pad(capturedAt.getMonth() + 1)}:${pad(
-        capturedAt.getDate()
-      )} ${pad(capturedAt.getHours())}:${pad(capturedAt.getMinutes())}:${pad(capturedAt.getSeconds())}`;
-      // GPS date/time are recommended to be in UTC
-      const gpsDateStamp = `${capturedAt.getUTCFullYear()}:${pad(capturedAt.getUTCMonth() + 1)}:${pad(
-        capturedAt.getUTCDate()
-      )}`;
-      const gpsTimeStamp = `${pad(capturedAt.getUTCHours())}:${pad(capturedAt.getUTCMinutes())}:${pad(
-        capturedAt.getUTCSeconds()
-      )}`;
-
-      const exifMetadata: EXIFMetadata = {
-        // GPS
-        GPSLatitude: location.latitude,
-        GPSLongitude: location.longitude,
-        GPSAltitude: location.altitude ?? undefined,
-        GPSAltitudeRef: location.altitude !== null && location.altitude < 0 ? 1 : 0,
-        GPSDateStamp: gpsDateStamp,
-        GPSTimeStamp: gpsTimeStamp,
-        // Timestamps
-        DateTimeOriginal: exifDateTime,
-        DateTimeDigitized: exifDateTime,
-        DateTime: exifDateTime,
-      };
+        const exifMetadata: EXIFMetadata = buildExifFromCoordinate(location);
 
       // Burn EXIF into the captured image and save into the gallery
       // Note: On iOS this may create a new Asset file. Use the returned URI.
@@ -251,8 +179,8 @@ export default function CameraScreen() {
                                 <Text className="text-white text-sm font-semibold">{errorMsg}</Text>
                             </View>
                         ) : (
-                            <View className={`${getBadgeColor()} px-4 py-2 rounded-lg self-start`}>
-                                <Text className="text-white text-sm font-semibold">{getBadgeText()}</Text>
+                            <View className={`${badgeColor} px-4 py-2 rounded-lg self-start`}>
+                                <Text className="text-white text-sm font-semibold">{badgeText}</Text>
                             </View>
                         )}
                     </View>
@@ -296,7 +224,7 @@ export default function CameraScreen() {
 
                     {/* Helper text */}
                     <Text className="mt-4 text-white text-sm text-center px-4">
-                        {getButtonLabel()}
+                        {buttonLabel}
                     </Text>
 
                     {/* Optional Border/Frame */}
