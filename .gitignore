@@ -41,3 +41,13 @@ app-example
 # generated native folders
 /ios
 /android
+
+# API Keys and Secrets (DO NOT PUSH)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Allow the example template to be pushed
+!.env.example
