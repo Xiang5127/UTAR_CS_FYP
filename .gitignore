@@ -51,3 +51,9 @@ app-example
 
 # Allow the example template to be pushed
 !.env.example
+
+# WebStorm / IntelliJ settings
+.idea/
+*.iml
+out/
+gen/
