@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useLocationWatcher } from '@/hooks/use-location-watcher';
 import { EXIFMetadata } from '@/types/exif.types';
-import { burnExifAndSaveToGallery } from '@/utils/exif-processor';
+import { burnExifOnly, saveToGalleryOnly } from '@/utils/exif-processor';
 import { useCameraCapture } from '@/hooks/use-camera-capture';
 import { buildExifFromCoordinate } from '@/utils/exif-builder';
 import { useAccuracySignal } from '@/hooks/use-accuracy-signal';
@@ -63,6 +63,7 @@ export default function CameraScreen() {
     };
   }, [isGreen]);
 
+  // THE MAGIC OF EVERYTHING
   const handleCapture = async () => {
     const canCapture = !!cameraRef.current && !!location && (isGreen || forceCaptureEnabled);
     if (!canCapture) {
@@ -74,55 +75,57 @@ export default function CameraScreen() {
     try {
       setIsCapturing(true);
 
-        // Capture photo via custom hook
+        // 1) Capture photo
         const photo = await capturePhoto({
             quality: 1,
             base64: false,
         });
 
-      // Capture photo via custom hook
+        // 2) Build EXIF metadata from current location snapshot
         const exifMetadata: EXIFMetadata = buildExifFromCoordinate(location);
 
-      // Burn EXIF into the captured image and save into the gallery
-      // Note: On iOS this may create a new Asset file. Use the returned URI.
-      let savedUri = photo.uri;
-      try {
-        const saved = await burnExifAndSaveToGallery(photo.uri, exifMetadata, 'Streamline');
-        savedUri = saved.uri;
-      } catch (e) {
-        console.warn('Failed to write EXIF and save to gallery:', e);
-        // Fallback: keep original photo URI (may still be on temp cache)
-      }
+        // 3) Burn EXIF into temp file — get back the EXIF-written temp URI
+        let exifUri = photo.uri;
+        try {
+            const written = await burnExifOnly(photo.uri, exifMetadata);
+            exifUri = written.uri;
+        } catch (e) {
+            console.warn('Failed to write EXIF:', e);
+        }
 
-      // Create payload with saved photo URI, location data, and EXIF metadata
-      const payload: CapturePayload = {
-        photoUri: savedUri,
-        location: {
-          latitude: location.latitude,
-          longitude: location.longitude,
-          accuracy: location.accuracy,
-          altitude: location.altitude,
-          timestamp: location.timestamp,
-        },
-        exif: exifMetadata,
-        verificationMethod: isGreen ? 'precise' : 'override',
-      };
+        // 4) Save to gallery in foreground — Android popup (can't suppress, Android 10 problem) appears here
+        //    while user is still on camera page, contextually makes sense
+        await saveToGalleryOnly(exifUri, 'Streamline');
 
-      // Send to API (mock function - logs to console)
-      sendToAPI(payload);
+        // 5) Build payload
+        const payload: CapturePayload = {
+            photoUri: exifUri,
+            location: {
+                latitude: location.latitude,
+                longitude: location.longitude,
+                accuracy: location.accuracy,
+                altitude: location.altitude,
+                timestamp: location.timestamp,
+            },
+            exif: exifMetadata,
+            accuracyStatus: isGreen ? 'precise' : 'override',
+        };
 
-      Alert.alert('Success', 'Photo captured, EXIF written, and saved to gallery!', [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]);
+        // 6) Show success after gallery save confirms
+        Alert.alert('Success', 'Photo captured, EXIF written, and saved to gallery!', [
+            { text: 'OK', onPress: () => router.back() },
+        ]);
+
+        // 7) Upload to Supabase in background
+        sendToAPI(payload).catch((e) => {
+            console.warn('Background upload failed:', e);
+        });
+
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to capture photo';
-      Alert.alert('Error', errorMessage);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to capture photo';
+        Alert.alert('Error', errorMessage);
     } finally {
-      setIsCapturing(false);
+        setIsCapturing(false);
     }
   };
 
@@ -179,7 +182,7 @@ export default function CameraScreen() {
                                 <Text className="text-white text-sm font-semibold">{errorMsg}</Text>
                             </View>
                         ) : (
-                            <View className={`${badgeColor} px-4 py-2 rounded-lg self-start`}>
+                            <View style={{ backgroundColor: badgeColor }} className="px-4 py-2 rounded-lg self-start">
                                 <Text className="text-white text-sm font-semibold">{badgeText}</Text>
                             </View>
                         )}
