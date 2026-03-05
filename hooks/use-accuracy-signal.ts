@@ -10,7 +10,6 @@ export interface AccuracySignalResult {
     badgeText: string;
     buttonLabel: string;
     isGreen: boolean;
-    forceCaptureLabel: string;
 }
 
 export function useAccuracySignal(
@@ -27,11 +26,7 @@ export function useAccuracySignal(
     const isGreen = signal === 'green';
 
     const badgeColor =
-        signal === 'green'
-            ? 'bg-green-500'
-            : signal === 'yellow'
-                ? 'bg-yellow-500'
-                : 'bg-red-500';
+        signal === 'green' ? '#22c55e' : signal === 'yellow' ? '#eab308' : '#ef4444';
 
     const badgeText =
         accuracy === null
@@ -46,12 +41,5 @@ export function useAccuracySignal(
             ? 'Force Capture (Low Accuracy)'
             : 'Improving Accuracy...';
 
-    return {
-        signal,
-        badgeColor,
-        badgeText,
-        buttonLabel,
-        isGreen,
-        forceCaptureLabel: buttonLabel,
-    };
+    return { signal, badgeColor, badgeText, buttonLabel, isGreen };
 }
