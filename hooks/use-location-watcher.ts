@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { LocationCoordinate, LocationWatcherState } from '@/types/location.types';
 
 export interface UseLocationWatcherReturn extends LocationWatcherState {
-  latestCoordinateRef: RefObject<LocationCoordinate | null>;
+    latestCoordinateRef: { current: LocationCoordinate | null };
 }
 
 /**
