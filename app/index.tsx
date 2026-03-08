@@ -1,10 +1,26 @@
+
 import { useRouter } from 'expo-router';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {useEffect, useState} from 'react'
+import {supabase} from "../utils/supabase_client";
 
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+    useEffect(() => {
+        fetch('https://hbvayzayhqqunkvgrwza.supabase.co')
+            .then(res => console.log('✅ Fetch test passed:', res.status))
+            .catch(err => console.log('❌ Fetch test failed:', err.message));
+    }, []);
+
+    useEffect(() => {
+        supabase.from('delivery_records').select('id').limit(1).then(({ data, error }) => {
+            if (error) console.log('❌ DB test failed:', error.message);
+            else console.log('✅ DB test passed:', data);
+        });
+    }, []);
 
   return (
     <View

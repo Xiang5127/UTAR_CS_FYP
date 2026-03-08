@@ -21,6 +21,7 @@ export interface CapturePayload {
  * Also computes a SHA-256 hash of the image for tamper detection.
  */
 export async function sendToAPI(payload: CapturePayload): Promise<void> {
+
     try {
         // 1) Compute image hash for tamper detection
         const imageHash = await hashImageFile(payload.photoUri);

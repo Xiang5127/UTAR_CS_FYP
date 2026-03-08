@@ -8,7 +8,7 @@ export default function RootLayout() {
     <>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="camera" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="camera/index" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
       </Stack>
       <StatusBar style="auto" />
     </>
