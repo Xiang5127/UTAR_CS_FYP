@@ -14,6 +14,7 @@ export interface CapturePayload {
     };
     exif: EXIFMetadata | null;
     accuracyStatus: 'precise' | 'override';
+    trackingNumber: string,
 }
 
 /**
@@ -61,6 +62,7 @@ export async function sendToAPI(payload: CapturePayload): Promise<void> {
                 gps_accuracy_metres: payload.location.accuracy,
                 captured_at: new Date(payload.location.timestamp).toISOString(),
                 accuracy_status: payload.accuracyStatus,
+                tracking_number: payload.trackingNumber,
             });
 
         if (dbError) throw new Error(`Database insert failed: ${dbError.message}`);
