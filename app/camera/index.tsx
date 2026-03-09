@@ -1,4 +1,4 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -20,19 +20,25 @@ export default function CameraScreen() {
   const [forceCaptureEnabled, setForceCaptureEnabled] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Use the new location watcher hook
-  const { coordinate, error, latestCoordinateRef } = useLocationWatcher();
-  const location = coordinate;
+    // Barcode state
+    const [trackingNumber, setTrackingNumber] = useState<string | null>(null);
+    const isScanningRef = useRef(true); // prevents multiple scans firing at once
 
-  const errorMsg = error?.message ?? null;
+    // Use the new location watcher hook
+    const { coordinate, error, latestCoordinateRef } = useLocationWatcher();
+    const location = coordinate;
+    const errorMsg = error?.message ?? null;
 
   // Use the custom camera capture hook with the watcher's latest coordinate ref
   const { cameraRef, capturePhoto } = useCameraCapture(latestCoordinateRef);
 
     const accuracy = coordinate?.accuracy ?? null;
-    const { signal, badgeColor, badgeText, buttonLabel, isGreen } = useAccuracySignal(accuracy, forceCaptureEnabled);
+    const { badgeColor, badgeText, buttonLabel, isGreen } = useAccuracySignal(accuracy, forceCaptureEnabled);
 
-  // Fallback Timer Logic: start 5s timer on mount if not Green; clear upon Green
+    // Capture button requires BOTH barcode scanned AND GPS ready
+    const canCapture = !!cameraRef.current && !!location && !!trackingNumber && (isGreen || forceCaptureEnabled);
+
+    // Fallback Timer Logic: start 5s timer on mount if not Green; clear upon Green
   useEffect(() => {
     // Helper to clear any existing timer
     const clearTimer = () => {
@@ -63,11 +69,26 @@ export default function CameraScreen() {
     };
   }, [isGreen]);
 
+  // Barcode scan handler
+  const handleBarcodeScanned = (result: BarcodeScanningResult) => {
+      // Only process Code 128 barcodes and only if not already scanned
+      if (!isScanningRef.current) return;
+      if (result.type !== 'code128') return;
+
+      isScanningRef.current = false; // lock to prevent duplicate scans
+      setTrackingNumber(result.data);
+  };
+
+  // Reset barcode scan (allow rescanning)
+  const handleRescan = () => {
+      setTrackingNumber(null);
+      isScanningRef.current = true;
+  };
+
   // THE MAGIC OF EVERYTHING
   const handleCapture = async () => {
-    const canCapture = !!cameraRef.current && !!location && (isGreen || forceCaptureEnabled);
     if (!canCapture) {
-      alert('Camera or location not ready, or accuracy still improving.');
+      alert('Camera, location, or barcode not ready.');
       console.log('Error in handleCapture: Not available or not allowed by accuracy state');
       return;
     }
@@ -109,6 +130,7 @@ export default function CameraScreen() {
             },
             exif: exifMetadata,
             accuracyStatus: isGreen ? 'precise' : 'override',
+            trackingNumber: trackingNumber!,
         };
 
         // 6) Show success after gallery save confirms
@@ -163,6 +185,8 @@ export default function CameraScreen() {
                 style={styles.camera}
                 facing="back"
                 mode="picture"
+                barcodeScannerSettings={{ barcodeTypes: ['code128'] }}
+                onBarcodeScanned={trackingNumber ? undefined : handleBarcodeScanned}
             />
 
             {/* Overlay split into top and bottom halves with a middle separator line */}
@@ -202,13 +226,31 @@ export default function CameraScreen() {
                 {/* Bottom Half */}
                 <View style={{ flex: 1, paddingBottom: insets.bottom + 24 }} className="items-center justify-end relative">
 
-                    {/* Centered Guide Text */}
+                    {/* Barcode status — shown in place of the guide text */}
                     <View className="absolute inset-0 items-center justify-center mb-20 pointer-events-box-none">
-                        <Text className="text-white text-lg font-bold opacity-70 ">
-                            CAPTURE PARCEL HERE
-                        </Text>
+                        {trackingNumber ? (
+                            <View className="items-center">
+                                <View className="bg-green-500 px-4 py-2 rounded-lg mb-2">
+                                    <Text className="text-white text-sm font-bold">✓ {trackingNumber}</Text>
+                                </View>
+                                <TouchableOpacity onPress={handleRescan} className="pointer-events-auto">
+                                    <Text className="text-yellow-400 text-xs underline">Rescan</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <Text className="text-white text-lg font-bold opacity-70">
+                                SCAN PARCEL BARCODE
+                            </Text>
+                        )}
                     </View>
+                    {/*/!* Centered Guide Text *!/*/}
+                    {/*<View className="absolute inset-0 items-center justify-center mb-20 pointer-events-box-none">*/}
+                    {/*    <Text className="text-white text-lg font-bold opacity-70 ">*/}
+                    {/*        CAPTURE PARCEL HERE*/}
+                    {/*    </Text>*/}
+                    {/*</View>*/}
 
+                    {/* Capture Button */}
                     <TouchableOpacity
                         onPress={handleCapture}
                         disabled={!(isGreen || forceCaptureEnabled) || isCapturing || !location}
