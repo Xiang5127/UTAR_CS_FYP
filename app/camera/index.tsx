@@ -11,6 +11,7 @@ import { useCameraCapture } from '@/hooks/use-camera-capture';
 import { buildExifFromCoordinate } from '@/utils/exif-builder';
 import { useAccuracySignal } from '@/hooks/use-accuracy-signal';
 import { sendToAPI, CapturePayload } from '@/utils/api';
+import BarcodeViewfinder from '@/components/BarcodeViewfinder';
 
 export default function CameraScreen() {
   const router = useRouter();
@@ -226,38 +227,28 @@ export default function CameraScreen() {
                 {/* Bottom Half */}
                 <View style={{ flex: 1, paddingBottom: insets.bottom + 24 }} className="items-center justify-end relative">
 
-                    {/* Barcode status — shown in place of the guide text */}
-                    <View className="absolute inset-0 items-center justify-center mb-20 pointer-events-box-none">
+                    {/* Barcode viewfinder — centered in parcel zone */}
+                    <View className="absolute inset-0 items-center justify-center mb-16">
+                        <BarcodeViewfinder isDetected={!!trackingNumber} />
+                        {/* Tracking number display below viewfinder */}
                         {trackingNumber ? (
-                            <View className="items-center">
-                                <View className="bg-green-500 px-4 py-2 rounded-lg mb-2">
-                                    <Text className="text-white text-sm font-bold">✓ {trackingNumber}</Text>
-                                </View>
-                                <TouchableOpacity onPress={handleRescan} className="pointer-events-auto">
+                            <View className="items-center mt-3">
+                                <Text className="text-green-400 text-sm font-bold">{trackingNumber}</Text>
+                                <TouchableOpacity onPress={handleRescan} className="mt-1">
                                     <Text className="text-yellow-400 text-xs underline">Rescan</Text>
                                 </TouchableOpacity>
                             </View>
                         ) : (
-                            <Text className="text-white text-lg font-bold opacity-70">
-                                SCAN PARCEL BARCODE
-                            </Text>
+                            <Text className="text-white/60 text-xs mt-3">Point at Code 128 barcode</Text>
                         )}
                     </View>
-                    {/*/!* Centered Guide Text *!/*/}
-                    {/*<View className="absolute inset-0 items-center justify-center mb-20 pointer-events-box-none">*/}
-                    {/*    <Text className="text-white text-lg font-bold opacity-70 ">*/}
-                    {/*        CAPTURE PARCEL HERE*/}
-                    {/*    </Text>*/}
-                    {/*</View>*/}
 
-                    {/* Capture Button */}
+                    {/* Capture button */}
                     <TouchableOpacity
                         onPress={handleCapture}
-                        disabled={!(isGreen || forceCaptureEnabled) || isCapturing || !location}
+                        disabled={!canCapture || isCapturing}
                         className={`w-20 h-20 rounded-full items-center justify-center ${
-                            (isGreen || forceCaptureEnabled) && !isCapturing && location
-                                ? 'bg-white'
-                                : 'bg-gray-500'
+                            canCapture && !isCapturing ? 'bg-white' : 'bg-gray-500'
                         }`}
                         activeOpacity={0.8}>
                         {isCapturing ? (
@@ -269,13 +260,44 @@ export default function CameraScreen() {
 
                     {/* Helper text */}
                     <Text className="mt-4 text-white text-sm text-center px-4">
-                        {buttonLabel}
+                        {!trackingNumber ? 'Scan parcel barcode to unlock capture' : buttonLabel}
                     </Text>
+
+                    <View className="absolute top-10 left-10 w-8 h-8 border-t-4 border-l-4 border-white/50" />
+                    <View className="absolute top-10 right-10 w-8 h-8 border-t-4 border-r-4 border-white/50" />
+
+                    {/*/!* Centered Guide Text *!/*/}
+                    {/*<View className="absolute inset-0 items-center justify-center mb-20 pointer-events-box-none">*/}
+                    {/*    <Text className=" text-white text-lg font-bold opacity-70 ">*/}
+                    {/*        CAPTURE PARCEL HERE*/}
+                    {/*    </Text>*/}
+                    {/*</View>*/}
+
+                    {/* Capture Button */}
+                    {/*<TouchableOpacity*/}
+                    {/*    onPress={handleCapture}*/}
+                    {/*    disabled={!(isGreen || forceCaptureEnabled) || isCapturing || !location}*/}
+                    {/*    className={`w-20 h-20 rounded-full items-center justify-center ${*/}
+                    {/*        (isGreen || forceCaptureEnabled) && !isCapturing && location*/}
+                    {/*            ? 'bg-white'*/}
+                    {/*            : 'bg-gray-500'*/}
+                    {/*    }`}*/}
+                    {/*    activeOpacity={0.8}>*/}
+                    {/*    {isCapturing ? (*/}
+                    {/*        <ActivityIndicator size="small" color="#000" />*/}
+                    {/*    ) : (*/}
+                    {/*        <View className="w-16 h-16 rounded-full border-4 border-gray-800" />*/}
+                    {/*    )}*/}
+                    {/*</TouchableOpacity>*/}
+
+                    {/*/!* Helper text *!/*/}
+                    {/*<Text className="mt-4 text-white text-sm text-center px-4">*/}
+                    {/*    {buttonLabel}*/}
+                    {/*</Text>*/}
 
                     {/* Optional Border/Frame */}
                     <View className="absolute top-10 left-10 w-8 h-8 border-t-4 border-l-4 border-white/50" />
                     <View className="absolute top-10 right-10 w-8 h-8 border-t-4 border-r-4 border-white/50" />
-
                 </View>
             </View>
         </View>
