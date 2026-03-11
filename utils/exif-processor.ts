@@ -26,56 +26,56 @@ import { writeAsync } from '@lodev09/react-native-exify';
  * @returns Object containing the final saved asset URI and ID (when available)
  */
 export async function burnExifAndSaveToGallery(
-  photoUri: string,
-  exifTags: EXIFMetadata,
-  albumName?: string
+    photoUri: string,
+    exifTags: EXIFMetadata,
+    albumName?: string
 ): Promise<{ uri: string; assetId?: string }> {
-  // 1) Burn/merge EXIF into the local file first
-  const writeResult = await writeAsync(photoUri, exifTags as any);
-  const writtenUri = writeResult?.uri ?? photoUri;
+    // 1) Burn/merge EXIF into the local file first
+    const writeResult = await writeAsync(photoUri, exifTags as any);
+    const writtenUri = writeResult?.uri ?? photoUri;
 
-  // 2) Dynamically import expo-media-library (avoids crashes on web/unsupported envs)
-  let MediaLibrary: typeof import('expo-media-library') | null = null;
-  try {
-    MediaLibrary = await import('expo-media-library');
-  } catch (e) {
-    console.warn(
-      "[burnExifAndSaveToGallery] 'expo-media-library' not found. " +
-        'Ensure it is installed (npx expo install expo-media-library) and you are running a Dev Client/EAS build.'
-    );
-    return { uri: writtenUri };
-  }
-
-  // 3) Request media library permissions and save to gallery
-  const permission = await MediaLibrary.requestPermissionsAsync();
-  if (!permission.granted) {
-    // Permission denied — return the written file URI without saving to gallery
-    return { uri: writtenUri };
-  }
-
-  const asset = await MediaLibrary.createAssetAsync(writtenUri);
-
-  if (albumName && albumName.trim().length > 0) {
+    // 2) Dynamically import expo-media-library (avoids crashes on web/unsupported envs)
+    let MediaLibrary: typeof import('expo-media-library') | null = null;
     try {
-      const album = await MediaLibrary.getAlbumAsync(albumName);
-      if (album) {
-        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-      } else {
-        await MediaLibrary.createAlbumAsync(albumName, asset, false);
-      }
+        MediaLibrary = await import('expo-media-library');
     } catch (e) {
-      // If album ops fail, at least the asset is created in the library
-      // Swallow and continue.
+        console.warn(
+            "[burnExifAndSaveToGallery] 'expo-media-library' not found. " +
+                'Ensure it is installed (npx expo install expo-media-library) and you are running a Dev Client/EAS build.'
+        );
+        return { uri: writtenUri };
     }
-  }
 
-  // Asset URI may differ from the original file URI
-  return { uri: asset.uri, assetId: asset.id };
+    // 3) Request media library permissions and save to gallery
+    const permission = await MediaLibrary.requestPermissionsAsync();
+    if (!permission.granted) {
+        // Permission denied — return the written file URI without saving to gallery
+        return { uri: writtenUri };
+    }
+
+    const asset = await MediaLibrary.createAssetAsync(writtenUri);
+
+    if (albumName && albumName.trim().length > 0) {
+        try {
+            const album = await MediaLibrary.getAlbumAsync(albumName);
+            if (album) {
+                await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+            } else {
+                await MediaLibrary.createAlbumAsync(albumName, asset, false);
+            }
+        } catch (e) {
+            // If album ops fail, at least the asset is created in the library
+            // Swallow and continue.
+        }
+    }
+
+    // Asset URI may differ from the original file URI
+    return { uri: asset.uri, assetId: asset.id };
 }
 
 /**
  * Merge GPS coordinates into EXIF metadata.
- * 
+ *
  * @param exifMetadata - Existing EXIF metadata
  * @param latitude - GPS latitude
  * @param longitude - GPS longitude
@@ -83,18 +83,18 @@ export async function burnExifAndSaveToGallery(
  * @returns Updated EXIF metadata with GPS data
  */
 export function mergeGPSIntoEXIF(
-  exifMetadata: EXIFMetadata,
-  latitude: number,
-  longitude: number,
-  altitude?: number
+    exifMetadata: EXIFMetadata,
+    latitude: number,
+    longitude: number,
+    altitude?: number
 ): EXIFMetadata {
-  return {
-    ...exifMetadata,
-    GPSLatitude: latitude,
-    GPSLongitude: longitude,
-    GPSAltitude: altitude,
-    GPSAltitudeRef: altitude !== undefined && altitude < 0 ? 1 : 0,
-  };
+    return {
+        ...exifMetadata,
+        GPSLatitude: latitude,
+        GPSLongitude: longitude,
+        GPSAltitude: altitude,
+        GPSAltitudeRef: altitude !== undefined && altitude < 0 ? 1 : 0,
+    };
 }
 
 /**
@@ -113,10 +113,7 @@ export async function burnExifOnly(
  * Saves an already-processed image URI to the device gallery.
  * Used after upload to keep the gallery save separate from the upload step.
  */
-export async function saveToGalleryOnly(
-    fileUri: string,
-    albumName?: string
-): Promise<void> {
+export async function saveToGalleryOnly(fileUri: string, albumName?: string): Promise<void> {
     let MediaLibrary: typeof import('expo-media-library') | null = null;
     try {
         MediaLibrary = await import('expo-media-library');

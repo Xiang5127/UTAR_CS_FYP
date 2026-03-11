@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, ViewStyle } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -22,11 +22,11 @@ interface BarcodeViewfinderProps {
 }
 
 export default function BarcodeViewfinder({
-                                              isDetected,
-                                              width = 220,
-                                              height = 110,
-                                              style,
-                                          }: BarcodeViewfinderProps) {
+    isDetected,
+    width = 220,
+    height = 110,
+    style,
+}: BarcodeViewfinderProps) {
     const scanX = useSharedValue(0);
     const boxScale = useSharedValue(1);
     const pulse = useSharedValue(1);
@@ -133,7 +133,7 @@ export default function BarcodeViewfinder({
     }));
 
     return (
-        <View style={ [{ width, height, alignItems: 'center', justifyContent: 'center' }, style] }>
+        <View style={[{ width, height, alignItems: 'center', justifyContent: 'center' }, style]}>
             <Animated.View style={boxStyle}>
                 <Animated.View style={topLeftStyle} />
                 <Animated.View style={topRightStyle} />
