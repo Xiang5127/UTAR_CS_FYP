@@ -1,5 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy';
-import {sha256} from 'js-sha256';
+import { sha256 } from 'js-sha256';
 
 /**
  * Computes a SHA-256 hash of a local image file.
