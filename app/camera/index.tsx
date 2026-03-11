@@ -1,4 +1,4 @@
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -11,6 +11,7 @@ import { useCameraCapture } from '@/hooks/use-camera-capture';
 import { buildExifFromCoordinate } from '@/utils/exif-builder';
 import { useAccuracySignal } from '@/hooks/use-accuracy-signal';
 import { sendToAPI, CapturePayload } from '@/utils/api';
+import BarcodeViewfinder from '@/components/BarcodeViewfinder';
 
 export default function CameraScreen() {
   const router = useRouter();
@@ -20,19 +21,31 @@ export default function CameraScreen() {
   const [forceCaptureEnabled, setForceCaptureEnabled] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Use the new location watcher hook
-  const { coordinate, error, latestCoordinateRef } = useLocationWatcher();
-  const location = coordinate;
+    // Barcode state
+    const [trackingNumber, setTrackingNumber] = useState<string | null>(null);
+    const isScanningRef = useRef(true);
 
-  const errorMsg = error?.message ?? null;
+    // Add to state
+    const [barcodeCorners, setBarcodeCorners] = useState<{ x: number; y: number }[] | null>(null);
+
+    // Track the parcel zone's position on screen
+    const parcelZoneRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+
+    // Use the new location watcher hook
+    const { coordinate, error, latestCoordinateRef } = useLocationWatcher();
+    const location = coordinate;
+    const errorMsg = error?.message ?? null;
 
   // Use the custom camera capture hook with the watcher's latest coordinate ref
   const { cameraRef, capturePhoto } = useCameraCapture(latestCoordinateRef);
 
     const accuracy = coordinate?.accuracy ?? null;
-    const { signal, badgeColor, badgeText, buttonLabel, isGreen } = useAccuracySignal(accuracy, forceCaptureEnabled);
+    const { badgeColor, badgeText, buttonLabel, isGreen } = useAccuracySignal(accuracy, forceCaptureEnabled);
 
-  // Fallback Timer Logic: start 5s timer on mount if not Green; clear upon Green
+    // Capture button requires BOTH barcode scanned AND GPS ready
+    const canCapture = !!cameraRef.current && !!location && !!trackingNumber && (isGreen || forceCaptureEnabled);
+
+    // Fallback Timer Logic: start 5s timer on mount if not Green; clear upon Green
   useEffect(() => {
     // Helper to clear any existing timer
     const clearTimer = () => {
@@ -63,11 +76,50 @@ export default function CameraScreen() {
     };
   }, [isGreen]);
 
+    const scanDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastScannedDataRef = useRef<string | null>(null);
+    const stableCountRef = useRef(0);
+    const REQUIRED_STABLE_COUNT = 4; // must see same barcode 4 frames in a row
+
+    const handleBarcodeScanned = (result: BarcodeScanningResult) => {
+        if (!isScanningRef.current) return;
+        if (result.type !== 'code128') return;
+
+        // If same data as last frame, increment stable count
+        if (result.data === lastScannedDataRef.current) {
+            stableCountRef.current += 1;
+        } else {
+            // Different data — reset count, store new candidate
+            lastScannedDataRef.current = result.data;
+            stableCountRef.current = 1;
+            // Update corners live as camera moves, but don't lock yet
+            setBarcodeCorners(result.cornerPoints ?? null);
+            return;
+        }
+
+        // Update corners on every stable frame so they track smoothly
+        setBarcodeCorners(result.cornerPoints ?? null);
+
+        // Only lock in once we have enough stable consecutive readings
+        if (stableCountRef.current >= REQUIRED_STABLE_COUNT) {
+            isScanningRef.current = false;
+            setTrackingNumber(result.data);
+        }
+    };
+
+    const handleRescan = () => {
+        if (scanDebounceRef.current) clearTimeout(scanDebounceRef.current);
+        lastScannedDataRef.current = null;
+        stableCountRef.current = 0;
+        setTrackingNumber(null);
+        setBarcodeCorners(null);
+        isScanningRef.current = true;
+    };
+
   // THE MAGIC OF EVERYTHING
   const handleCapture = async () => {
-    const canCapture = !!cameraRef.current && !!location && (isGreen || forceCaptureEnabled);
     if (!canCapture) {
-      alert('Camera or location not ready, or accuracy still improving.');
+      alert('Camera, location, or barcode not ready.');
       console.log('Error in handleCapture: Not available or not allowed by accuracy state');
       return;
     }
@@ -109,6 +161,7 @@ export default function CameraScreen() {
             },
             exif: exifMetadata,
             accuracyStatus: isGreen ? 'precise' : 'override',
+            trackingNumber: trackingNumber!,
         };
 
         // 6) Show success after gallery save confirms
@@ -163,6 +216,8 @@ export default function CameraScreen() {
                 style={styles.camera}
                 facing="back"
                 mode="picture"
+                barcodeScannerSettings={{ barcodeTypes: ['code128'] }}
+                onBarcodeScanned={trackingNumber ? undefined : handleBarcodeScanned}
             />
 
             {/* Overlay split into top and bottom halves with a middle separator line */}
@@ -172,8 +227,8 @@ export default function CameraScreen() {
                 <View style={{ flex: 1, paddingTop: insets.top + 8 }} className="relative">
 
                     {/* Optional Border UI */}
-                    <View className="absolute bottom-10 right-10 w-8 h-8 border-b-4 border-r-4 border-white/50" />
-                    <View className="absolute bottom-10 left-10 w-8 h-8 border-b-4 border-l-4 border-white/50" />
+                    <View className="absolute bottom-10 right-10 w-8 h-8 border-b-2 border-r-2 border-white/50" />
+                    <View className="absolute bottom-10 left-10 w-8 h-8 border-b-2 border-l-2 border-white/50" />
 
                     {/* GPS meter tracker */}
                     <View className="mx-4">
@@ -200,40 +255,65 @@ export default function CameraScreen() {
                 <View style={styles.separatorLine} />
 
                 {/* Bottom Half */}
-                <View style={{ flex: 1, paddingBottom: insets.bottom + 24 }} className="items-center justify-end relative">
+                <View
+                    style={{ flex: 1, paddingBottom: insets.bottom + 24 }}
+                    className="relative"
+                    onLayout={(e) => {
+                        e.target.measure((x, y, width, height, pageX, pageY) => {
+                            parcelZoneRef.current = { x: pageX, y: pageY, width, height };
+                        });
+                    }}>
 
-                    {/* Centered Guide Text */}
-                    <View className="absolute inset-0 items-center justify-center mb-20 pointer-events-box-none">
-                        <Text className="text-white text-lg font-bold opacity-70 ">
-                            CAPTURE PARCEL HERE
+                    <View className="flex-1 items-center justify-start pt-16 gap-y-3">
+                        <BarcodeViewfinder
+                            isDetected={!!trackingNumber}
+                            width={210}
+                            height={80}
+                            style={{ alignSelf: 'center', paddingTop: insets.top}}
+                        />
+                    </View>
+
+                    {/* Labels — centred in upper portion of parcel zone */}
+                    <View className="flex-1 items-center justify-center gap-y-3">
+                        {trackingNumber ? (
+                            <View className="items-center gap-y-1">
+                                <Text className="text-green-400 text-sm font-bold">{trackingNumber}</Text>
+                                <TouchableOpacity onPress={handleRescan}>
+                                    <Text className="text-yellow-400 text-xs underline">Rescan</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <Text className="text-white/60 text-xs">Point at Code 128 barcode</Text>
+                        )}
+                    </View>
+
+                    {/* Capture button — pinned to bottom */}
+                    <View className="items-center gap-y-2">
+                        <TouchableOpacity
+                            onPress={handleCapture}
+                            disabled={!canCapture || isCapturing}
+                            className={`w-20 h-20 rounded-full items-center justify-center ${
+                                canCapture && !isCapturing ? 'bg-white' : 'bg-gray-500'
+                            }`}
+                            activeOpacity={0.8}
+                        >
+                            {isCapturing ? (
+                                <ActivityIndicator size="small" color="#000" />
+                            ) : (
+                                <View className="w-16 h-16 rounded-full border-4 border-gray-800" />
+                            )}
+                        </TouchableOpacity>
+
+                        <Text className="text-white text-xs text-center px-6">
+                            {!trackingNumber
+                                ? 'Scan parcel barcode to unlock capture'
+                                : buttonLabel}
                         </Text>
                     </View>
 
-                    <TouchableOpacity
-                        onPress={handleCapture}
-                        disabled={!(isGreen || forceCaptureEnabled) || isCapturing || !location}
-                        className={`w-20 h-20 rounded-full items-center justify-center ${
-                            (isGreen || forceCaptureEnabled) && !isCapturing && location
-                                ? 'bg-white'
-                                : 'bg-gray-500'
-                        }`}
-                        activeOpacity={0.8}>
-                        {isCapturing ? (
-                            <ActivityIndicator size="small" color="#000" />
-                        ) : (
-                            <View className="w-16 h-16 rounded-full border-4 border-gray-800" />
-                        )}
-                    </TouchableOpacity>
-
-                    {/* Helper text */}
-                    <Text className="mt-4 text-white text-sm text-center px-4">
-                        {buttonLabel}
-                    </Text>
-
-                    {/* Optional Border/Frame */}
-                    <View className="absolute top-10 left-10 w-8 h-8 border-t-4 border-l-4 border-white/50" />
-                    <View className="absolute top-10 right-10 w-8 h-8 border-t-4 border-r-4 border-white/50" />
-
+                    {/* Corner brackets of parcel zone frame */}
+                    <View className="absolute top-10 left-10 w-8 h-8 border-t-2 border-l-2 border-white/50" />
+                    <View className="absolute top-10 right-10 w-8 h-8 border-t-2 border-r-2 border-white/50" />
                 </View>
             </View>
         </View>
