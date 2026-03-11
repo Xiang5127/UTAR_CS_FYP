@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View, StyleSheet, ViewStyle } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -7,152 +7,140 @@ import Animated, {
     withTiming,
     withSequence,
     Easing,
-    interpolateColor,
 } from 'react-native-reanimated';
+
+const CORNER_SIZE = 18;
+const CORNER_THICKNESS = 3;
+const IDLE_COLORS = ['#4285F4', '#FBBC05', '#34A853', '#EA4335'];
+const DETECTED_COLOR = '#22c55e';
 
 interface BarcodeViewfinderProps {
     isDetected: boolean;
+    width?: number;
+    height?: number;
+    style?: ViewStyle;
 }
 
-const CORNER_SIZE = 28;
-const CORNER_THICKNESS = 4;
-const VIEWFINDER_SIZE = 200;
-
-/**
- * Animated barcode viewfinder with four corner brackets.
- * - Idle: corners pulse opacity to indicate scanning in progress
- * - Detected: corners turn green and scale up to confirm lock
- */
-export default function BarcodeViewfinder({ isDetected }: BarcodeViewfinderProps) {
+export default function BarcodeViewfinder({
+                                              isDetected,
+                                              width = 220,
+                                              height = 110,
+                                              style,
+                                          }: BarcodeViewfinderProps) {
+    const scanX = useSharedValue(0);
+    const boxScale = useSharedValue(1);
     const pulse = useSharedValue(1);
-    const scale = useSharedValue(1);
-    const colorProgress = useSharedValue(0);
 
-    // Idle pulse animation — runs continuously until detected
     useEffect(() => {
         if (!isDetected) {
+            // Reset
+            boxScale.value = withTiming(1, { duration: 200 });
             pulse.value = withRepeat(
                 withSequence(
-                    withTiming(0.4, { duration: 800, easing: Easing.inOut(Easing.ease) }),
-                    withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) })
+                    withTiming(0.4, { duration: 700, easing: Easing.inOut(Easing.ease) }),
+                    withTiming(1.0, { duration: 700, easing: Easing.inOut(Easing.ease) })
                 ),
-                -1, // repeat forever
+                -1,
                 false
             );
-            scale.value = withTiming(1, { duration: 200 });
-            colorProgress.value = withTiming(0, { duration: 200 });
-        } else {
-            // Detected — stop pulse, snap to green with scale pop
-            pulse.value = withTiming(1, { duration: 150 });
-            scale.value = withSequence(
-                withTiming(1.08, { duration: 150, easing: Easing.out(Easing.ease) }),
-                withTiming(1, { duration: 150, easing: Easing.in(Easing.ease) })
+            // Scan line left to right
+            scanX.value = 0;
+            scanX.value = withRepeat(
+                withSequence(
+                    withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
+                    withTiming(0, { duration: 1400, easing: Easing.inOut(Easing.ease) })
+                ),
+                -1,
+                false
             );
-            colorProgress.value = withTiming(1, { duration: 200 });
+        } else {
+            // Lock-on: shrink the box, stop pulse, stop scan line
+            boxScale.value = withSequence(
+                withTiming(0.75, { duration: 200, easing: Easing.out(Easing.ease) }),
+                withTiming(0.82, { duration: 100 })
+            );
+            pulse.value = withTiming(1, { duration: 150 });
         }
     }, [isDetected]);
 
-    const animatedCornerStyle = useAnimatedStyle(() => ({
+    // Each corner animated style
+    const topLeftStyle = useAnimatedStyle(() => ({
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: CORNER_SIZE,
+        height: CORNER_SIZE,
+        borderTopWidth: CORNER_THICKNESS,
+        borderLeftWidth: CORNER_THICKNESS,
+        borderColor: isDetected ? DETECTED_COLOR : IDLE_COLORS[0],
+        borderTopLeftRadius: 3,
         opacity: pulse.value,
-        transform: [{ scale: scale.value }],
     }));
 
-    const animatedColorStyle = useAnimatedStyle(() => ({
-        borderColor: interpolateColor(
-            colorProgress.value,
-            [0, 1],
-            ['#ffffff', '#22c55e'] // white → green-500
-        ),
+    const topRightStyle = useAnimatedStyle(() => ({
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: CORNER_SIZE,
+        height: CORNER_SIZE,
+        borderTopWidth: CORNER_THICKNESS,
+        borderRightWidth: CORNER_THICKNESS,
+        borderColor: isDetected ? DETECTED_COLOR : IDLE_COLORS[1],
+        borderTopRightRadius: 3,
+        opacity: pulse.value,
     }));
 
-    const cornerStyle = [animatedCornerStyle, animatedColorStyle];
+    const bottomLeftStyle = useAnimatedStyle(() => ({
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        width: CORNER_SIZE,
+        height: CORNER_SIZE,
+        borderBottomWidth: CORNER_THICKNESS,
+        borderLeftWidth: CORNER_THICKNESS,
+        borderColor: isDetected ? DETECTED_COLOR : IDLE_COLORS[2],
+        borderBottomLeftRadius: 3,
+        opacity: pulse.value,
+    }));
+
+    const bottomRightStyle = useAnimatedStyle(() => ({
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: CORNER_SIZE,
+        height: CORNER_SIZE,
+        borderBottomWidth: CORNER_THICKNESS,
+        borderRightWidth: CORNER_THICKNESS,
+        borderColor: isDetected ? DETECTED_COLOR : IDLE_COLORS[3],
+        borderBottomRightRadius: 3,
+        opacity: pulse.value,
+    }));
+
+    const scanLineStyle = useAnimatedStyle(() => ({
+        position: 'absolute',
+        left: scanX.value * (width - 2),
+        top: 0,
+        width: 2,
+        height: height,
+        backgroundColor: DETECTED_COLOR,
+        opacity: 0.7,
+    }));
+
+    const boxStyle = useAnimatedStyle(() => ({
+        width,
+        height,
+        transform: [{ scale: boxScale.value }],
+    }));
 
     return (
-        <View style={styles.container}>
-            {/* Top Left */}
-            <Animated.View style={[styles.corner, styles.topLeft, cornerStyle]} />
-            {/* Top Right */}
-            <Animated.View style={[styles.corner, styles.topRight, cornerStyle]} />
-            {/* Bottom Left */}
-            <Animated.View style={[styles.corner, styles.bottomLeft, cornerStyle]} />
-            {/* Bottom Right */}
-            <Animated.View style={[styles.corner, styles.bottomRight, cornerStyle]} />
-
-            {/* Optional center scan line — subtle horizontal line that slides up and down */}
-            {!isDetected && <ScanLine />}
+        <View style={ [{ width, height, alignItems: 'center', justifyContent: 'center' }, style] }>
+            <Animated.View style={boxStyle}>
+                <Animated.View style={topLeftStyle} />
+                <Animated.View style={topRightStyle} />
+                <Animated.View style={bottomLeftStyle} />
+                <Animated.View style={bottomRightStyle} />
+                {!isDetected && <Animated.View style={scanLineStyle} />}
+            </Animated.View>
         </View>
     );
 }
-
-/**
- * Subtle animated scan line that slides vertically inside the viewfinder.
- */
-function ScanLine() {
-    const translateY = useSharedValue(-60);
-
-    useEffect(() => {
-        translateY.value = withRepeat(
-            withSequence(
-                withTiming(60, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-                withTiming(-60, { duration: 1500, easing: Easing.inOut(Easing.ease) })
-            ),
-            -1,
-            false
-        );
-    }, []);
-
-    const animatedStyle = useAnimatedStyle(() => ({
-        transform: [{ translateY: translateY.value }],
-    }));
-
-    return (
-        <Animated.View style={[styles.scanLine, animatedStyle]} />
-    );
-}
-
-const styles = StyleSheet.create({
-    container: {
-        width: VIEWFINDER_SIZE,
-        height: VIEWFINDER_SIZE / 2, // half height since it's in the parcel zone
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative',
-    },
-    corner: {
-        position: 'absolute',
-        width: CORNER_SIZE,
-        height: CORNER_SIZE,
-        borderColor: '#ffffff',
-    },
-    topLeft: {
-        top: 0,
-        left: 0,
-        borderTopWidth: CORNER_THICKNESS,
-        borderLeftWidth: CORNER_THICKNESS,
-    },
-    topRight: {
-        top: 0,
-        right: 0,
-        borderTopWidth: CORNER_THICKNESS,
-        borderRightWidth: CORNER_THICKNESS,
-    },
-    bottomLeft: {
-        bottom: 0,
-        left: 0,
-        borderBottomWidth: CORNER_THICKNESS,
-        borderLeftWidth: CORNER_THICKNESS,
-    },
-    bottomRight: {
-        bottom: 0,
-        right: 0,
-        borderBottomWidth: CORNER_THICKNESS,
-        borderRightWidth: CORNER_THICKNESS,
-    },
-    scanLine: {
-        position: 'absolute',
-        width: VIEWFINDER_SIZE - 20,
-        height: 2,
-        backgroundColor: '#22c55e',
-        opacity: 0.6,
-    },
-});
