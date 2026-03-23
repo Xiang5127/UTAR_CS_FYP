@@ -14,7 +14,7 @@ export interface CapturePayload {
     };
     exif: EXIFMetadata | null;
     accuracyStatus: 'precise' | 'override';
-    trackingNumber: string,
+    trackingNumber: string;
 }
 
 /**
@@ -22,7 +22,6 @@ export interface CapturePayload {
  * Also computes a SHA-256 hash of the image for tamper detection.
  */
 export async function sendToAPI(payload: CapturePayload): Promise<void> {
-
     try {
         // 1) Compute image hash for tamper detection
         const imageHash = await hashImageFile(payload.photoUri);
@@ -51,19 +50,17 @@ export async function sendToAPI(payload: CapturePayload): Promise<void> {
         const imageUrl = urlData.publicUrl;
 
         // 5) Insert delivery record into database
-        const { error: dbError } = await supabase
-            .from('delivery_records')
-            .insert({
-                image_url: imageUrl,
-                image_hash: imageHash,
-                latitude: payload.location.latitude,
-                longitude: payload.location.longitude,
-                altitude: payload.location.altitude,
-                gps_accuracy_metres: payload.location.accuracy,
-                captured_at: new Date(payload.location.timestamp).toISOString(),
-                accuracy_status: payload.accuracyStatus,
-                tracking_number: payload.trackingNumber,
-            });
+        const { error: dbError } = await supabase.from('delivery_records').insert({
+            image_url: imageUrl,
+            image_hash: imageHash,
+            latitude: payload.location.latitude,
+            longitude: payload.location.longitude,
+            altitude: payload.location.altitude,
+            gps_accuracy_metres: payload.location.accuracy,
+            captured_at: new Date(payload.location.timestamp).toISOString(),
+            accuracy_status: payload.accuracyStatus,
+            tracking_number: payload.trackingNumber,
+        });
 
         if (dbError) throw new Error(`Database insert failed: ${dbError.message}`);
 

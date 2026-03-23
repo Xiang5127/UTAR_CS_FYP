@@ -20,26 +20,25 @@ export function useAccuracySignal(
         accuracy !== null && accuracy <= 10
             ? 'green'
             : accuracy !== null && accuracy <= 50
-                ? 'yellow'
-                : 'red';
+              ? 'yellow'
+              : 'red';
 
     const isGreen = signal === 'green';
 
-    const badgeColor =
-        signal === 'green' ? '#22c55e' : signal === 'yellow' ? '#eab308' : '#ef4444';
+    const badgeColor = signal === 'green' ? '#22c55e' : signal === 'yellow' ? '#eab308' : '#ef4444';
 
     const badgeText =
         accuracy === null
             ? 'GPS: -- (No Fix)'
             : isGreen
-                ? `GPS: ${accuracy.toFixed(1)}m ✓`
-                : `GPS: ${accuracy.toFixed(1)}m`;
+              ? `GPS: ${accuracy.toFixed(1)}m ✓`
+              : `GPS: ${accuracy.toFixed(1)}m`;
 
     const buttonLabel = isGreen
         ? 'Verified Capture'
         : forceCaptureEnabled
-            ? 'Force Capture (Low Accuracy)'
-            : 'Improving Accuracy...';
+          ? 'Force Capture (Low Accuracy)'
+          : 'Improving Accuracy...';
 
     return { signal, badgeColor, badgeText, buttonLabel, isGreen };
 }
