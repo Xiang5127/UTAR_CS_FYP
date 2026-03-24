@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View , Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useLocationWatcher } from '@/hooks/use-location-watcher';
@@ -174,6 +174,21 @@ export default function CameraScreen() {
             Alert.alert('Success', 'Photo captured, EXIF written, and saved to gallery!', [
                 { text: 'OK', onPress: () => router.back() },
             ]);
+
+            // 6.5) We manually use Share Sheet to send msg first due to Twilio limits
+            // Share sheet immediately — no waiting for Supabase
+            // Current msg is a hardcoded Landing Page where id=latest
+            await Share.share({
+                message: [
+                    `Delivery Confirmed`,
+                    ``,
+                    `Tracking: ${trackingNumber}`,
+                    `Time: ${new Date().toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })}`,
+                    ``,
+                    `View Proof of Delivery:`,
+                    `https://streamline-pod.vercel.app/delivery?id=latest`,
+                ].join('\n'),
+            });
 
             // 7) Upload to Supabase in background
             sendToAPI(payload).catch((e) => {
