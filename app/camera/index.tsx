@@ -186,7 +186,7 @@ export default function CameraScreen() {
                     `Time: ${new Date().toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })}`,
                     ``,
                     `View Proof of Delivery:`,
-                    `https://streamline-pod.vercel.app/delivery?id=latest`,
+                    `https://streamline-pod-landing-page.vercel.app/delivery?id=latest`,
                 ].join('\n'),
             });
 
