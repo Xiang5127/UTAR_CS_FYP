@@ -6,6 +6,11 @@ import '../global.css';
 export default function RootLayout() {
     return (
         <>
+            {/*
+            In Expo Router, you simply place a _layout.tsx file inside a folder.
+            If that file exports a <Stack />, everything in that folder is a stack.
+            If it exports <Tabs />, it's a tab bar.
+            */}
             <Stack>
                 <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen
