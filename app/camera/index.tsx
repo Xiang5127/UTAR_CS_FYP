@@ -22,11 +22,8 @@ export default function CameraScreen() {
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Barcode state
-    const [trackingNumber, setTrackingNumber] = useState<string | null>(null);
-    const isScanningRef = useRef(true);
-
-    // Add to state
-    const [barcodeCorners, setBarcodeCorners] = useState<{ x: number; y: number }[] | null>(null);
+    const [trackingNumber, setTrackingNumber] = useState<string | null>(null);  // stating useState could have string or null value type
+    const isScanningRef = useRef(true);  // useRef variable change won't trigger rerender
 
     // Track the parcel zone's position on screen
     const parcelZoneRef = useRef<{ x: number; y: number; width: number; height: number } | null>(
@@ -41,7 +38,7 @@ export default function CameraScreen() {
     // Use the custom camera capture hook with the watcher's latest coordinate ref
     const { cameraRef, capturePhoto } = useCameraCapture(latestCoordinateRef);
 
-    const accuracy = coordinate?.accuracy ?? null;
+    const accuracy = coordinate?.accuracy ?? null;  // Optional Chaining for coordinate, if is null, will return right side of '??'
     const { badgeColor, badgeText, buttonLabel, isGreen } = useAccuracySignal(
         accuracy,
         forceCaptureEnabled
@@ -134,13 +131,13 @@ export default function CameraScreen() {
             setIsCapturing(true);
 
             // 1) Capture photo
-            const photo = await capturePhoto({
+            const photo = await capturePhoto({ // links to use-camera-capture.ts
                 quality: 1,
                 base64: false,
             });
 
             // 2) Build EXIF metadata from current location snapshot
-            const exifMetadata: EXIFMetadata = buildExifFromCoordinate(location);
+            const exifMetadata: EXIFMetadata = buildExifFromCoordinate(location); // from exif-builder.ts
 
             // 3) Burn EXIF into temp file — get back the EXIF-written temp URI
             let exifUri = photo.uri;

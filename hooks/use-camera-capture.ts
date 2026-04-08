@@ -63,7 +63,7 @@ export function useCameraCapture(latestCoordinateRef: RefObject<LocationCoordina
             // Snapshot latest GPS coordinate immediately (from ref - no waiting)
             const locationSnapshot: LocationCoordinate | null = latestCoordinateRef.current;
 
-            const result: CameraCaptureResult = {
+            const result: CameraCaptureResult = { // custom interface from camera.types.ts
                 uri: photo.uri,
                 width: photo.width,
                 height: photo.height,

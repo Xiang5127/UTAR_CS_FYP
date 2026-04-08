@@ -35,8 +35,8 @@ export function buildExifFromCoordinate(coordinate: LocationCoordinate): EXIFMet
         GPSAltitudeRef: coordinate.altitude !== null && coordinate.altitude < 0 ? 1 : 0,
         GPSDateStamp: toGpsDateStamp(capturedAt),
         GPSTimeStamp: toGpsTimeStamp(capturedAt),
-        DateTimeOriginal: exifDateTime,
-        DateTimeDigitized: exifDateTime,
-        DateTime: exifDateTime,
+        DateTimeOriginal: exifDateTime, // This is the exact moment the rider took the photo of the parcel
+        DateTimeDigitized: exifDateTime, // The moment the image was stored as digital data
+        DateTime: exifDateTime, // The "Last Modified" time
     };
 }
