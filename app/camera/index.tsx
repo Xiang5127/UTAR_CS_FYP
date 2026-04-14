@@ -1,17 +1,17 @@
-import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
+import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View , Share } from 'react-native';
+import { ActivityIndicator, Alert, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import BarcodeViewfinder from '@/components/BarcodeViewfinder';
+import { useAccuracySignal } from '@/hooks/use-accuracy-signal';
+import { useCameraCapture } from '@/hooks/use-camera-capture';
 import { useLocationWatcher } from '@/hooks/use-location-watcher';
 import { EXIFMetadata } from '@/types/exif.types';
-import { burnExifOnly, saveToGalleryOnly } from '@/utils/exif-processor';
-import { useCameraCapture } from '@/hooks/use-camera-capture';
+import { CapturePayload, sendToAPI } from '@/utils/api';
 import { buildExifFromCoordinate } from '@/utils/exif-builder';
-import { useAccuracySignal } from '@/hooks/use-accuracy-signal';
-import { sendToAPI, CapturePayload } from '@/utils/api';
-import BarcodeViewfinder from '@/components/BarcodeViewfinder';
+import { burnExifOnly, saveToGalleryOnly } from '@/utils/exif-processor';
 
 export default function CameraScreen() {
     const router = useRouter();
@@ -22,6 +22,7 @@ export default function CameraScreen() {
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Barcode state
+    const [barcodeCorners, setBarcodeCorners] = useState<{ x: number; y: number }[] | null>(null);
     const [trackingNumber, setTrackingNumber] = useState<string | null>(null);  // stating useState could have string or null value type
     const isScanningRef = useRef(true);  // useRef variable change won't trigger rerender
 
