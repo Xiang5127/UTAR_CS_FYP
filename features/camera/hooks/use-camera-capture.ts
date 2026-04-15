@@ -1,28 +1,55 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Camera, useCameraDevice, useCameraFormat } from 'react-native-vision-camera';
 
-import { CameraCaptureResult, CameraState } from '@/types/camera.types';
 import { LocationCoordinate } from '@/types/location.types';
+import { CameraCaptureOptions, CameraCaptureResult, CameraState } from '../types/camera.types';
+import { useCameraPermissions } from './use-camera-permissions';
+
+export interface UseCameraCaptureReturn {
+    cameraRef: React.RefObject<Camera | null>;
+    device: ReturnType<typeof useCameraDevice>;
+    format: ReturnType<typeof useCameraFormat>;
+    state: CameraState;
+    capturePhoto: (options?: CameraCaptureOptions) => Promise<CameraCaptureResult>;
+}
 
 /**
- * Custom hook for camera capture operations.
+ * Custom hook for camera capture operations with react-native-vision-camera.
  *
  * Foundation structure — captures a photo and snapshots the latest GPS coordinate
  * from a ref provided by the location watcher.
  *
  * @param latestCoordinateRef - Ref containing latest GPS coordinate from location watcher
- * @returns Camera state and capture function
+ * @returns Camera state, ref, device, format, and capture function
  */
-export function useCameraCapture(latestCoordinateRef: RefObject<LocationCoordinate | null>) {
-    const [permission, requestPermission] = useCameraPermissions();
-    const cameraRef = useRef<CameraView>(null);
+export function useCameraCapture(
+    latestCoordinateRef: RefObject<LocationCoordinate | null>
+): UseCameraCaptureReturn {
+    const { permission, requestPermission, hasPermission } = useCameraPermissions();
+    const cameraRef = useRef<Camera>(null);
+
+    const device = useCameraDevice('back');
+    const format = useCameraFormat(device, [
+        { photoResolution: 'max' },
+        { photoAspectRatio: 4 / 3 },
+    ]);
 
     const [state, setState] = useState<CameraState>({
         isReady: false,
         isLoading: false,
         error: null,
-        hasPermission: permission?.granted ?? false,
+        hasPermission: false,
     });
+
+    useEffect(() => {
+        if (hasPermission) {
+            setState((prev) => ({
+                ...prev,
+                hasPermission: true,
+                isReady: !!device,
+            }));
+        }
+    }, [hasPermission, device]);
 
     /**
      * Capture a photo with GPS coordinates.
@@ -34,15 +61,14 @@ export function useCameraCapture(latestCoordinateRef: RefObject<LocationCoordina
      * @param options - Camera capture options
      * @returns Promise resolving to CameraCaptureResult with location data
      */
-    async function capturePhoto(options?: {
-        quality?: number;
-        base64?: boolean;
-    }): Promise<CameraCaptureResult> {
+    async function capturePhoto(
+        options?: CameraCaptureOptions
+    ): Promise<CameraCaptureResult> {
         try {
             setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
             // Check permissions
-            if (!permission?.granted) {
+            if (!hasPermission) {
                 const result = await requestPermission();
                 if (!result.granted) {
                     throw new Error('Camera permission not granted');
@@ -53,18 +79,20 @@ export function useCameraCapture(latestCoordinateRef: RefObject<LocationCoordina
                 throw new Error('Camera ref not available');
             }
 
-            // Capture photo
-            const photo = await cameraRef.current.takePictureAsync({
-                quality: options?.quality ?? 1,
-                base64: options?.base64 ?? false,
-                skipProcessing: false,
+            if (!device) {
+                throw new Error('Camera device not available');
+            }
+
+            // Capture photo with vision-camera
+            const photo = await cameraRef.current.takePhoto({
+                flash: 'off',
             });
 
             // Snapshot latest GPS coordinate immediately (from ref - no waiting)
             const locationSnapshot: LocationCoordinate | null = latestCoordinateRef.current;
 
-            const result: CameraCaptureResult = { // custom interface from camera.types.ts
-                uri: photo.uri,
+            const result: CameraCaptureResult = {
+                uri: `file://${photo.path}`, // vision-camera returns path, convert to file URI
                 width: photo.width,
                 height: photo.height,
                 location: locationSnapshot,
@@ -91,18 +119,11 @@ export function useCameraCapture(latestCoordinateRef: RefObject<LocationCoordina
         }
     }
 
-    // Update permission state when permission changes
-    useEffect(() => {
-        setState((prev) => ({
-            ...prev,
-            hasPermission: permission?.granted ?? false,
-        }));
-    }, [permission?.granted]);
-
     return {
         cameraRef,
+        device,
+        format,
         state,
         capturePhoto,
-        requestPermission,
     };
 }

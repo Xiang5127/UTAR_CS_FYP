@@ -1,16 +1,13 @@
 /**
- * Camera-related TypeScript interfaces for photo capture
+ * Camera feature types for react-native-vision-camera v4
  */
 
-import { LocationCoordinate } from './location.types';
-import { EXIFMetadata } from './exif.types';
+import { LocationCoordinate } from '@/types/location.types';
+import { EXIFMetadata } from '@/types/exif.types';
 
 export interface CameraCaptureOptions {
     quality?: number;
     base64?: boolean;
-    skipProcessing?: boolean;
-    allowsEditing?: boolean;
-    aspect?: [number, number];
 }
 
 export interface CameraCaptureResult {
@@ -24,8 +21,8 @@ export interface CameraCaptureResult {
 
 export interface CameraPermissionStatus {
     granted: boolean;
+    status: 'granted' | 'denied' | 'not-determined';
     canAskAgain: boolean;
-    status: 'granted' | 'denied' | 'undetermined';
 }
 
 export interface CameraState {
@@ -33,4 +30,16 @@ export interface CameraState {
     isLoading: boolean;
     error: Error | null;
     hasPermission: boolean;
+}
+
+export interface BarcodeScanResult {
+    value: string;
+    type: string;
+    corners: { x: number; y: number }[];
+}
+
+export interface BarcodeScannerState {
+    scanResult: BarcodeScanResult | null;
+    corners: { x: number; y: number }[] | null;
+    isScanning: boolean;
 }

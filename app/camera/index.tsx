@@ -1,14 +1,26 @@
-import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+    ActivityIndicator,
+    Alert,
+    Share,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import BarcodeViewfinder from '@/components/BarcodeViewfinder';
-import { useAccuracySignal } from '@/hooks/use-accuracy-signal';
-import { useCameraCapture } from '@/hooks/use-camera-capture';
-import { useLocationWatcher } from '@/hooks/use-location-watcher';
-import { EXIFMetadata } from '@/types/exif.types';
+import {
+    BarcodeViewfinder,
+    CameraView,
+    useAccuracySignal,
+    useBarcodeScanner,
+    useCameraCapture,
+    useCameraPermissions,
+    useLocationWatcher,
+} from '@/features/camera';
+import { EXIFMetadata } from '@/types';
 import { CapturePayload, sendToAPI } from '@/utils/api';
 import { buildExifFromCoordinate } from '@/utils/exif-builder';
 import { burnExifOnly, saveToGalleryOnly } from '@/utils/exif-processor';
@@ -16,45 +28,41 @@ import { burnExifOnly, saveToGalleryOnly } from '@/utils/exif-processor';
 export default function CameraScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const [permission, requestPermission] = useCameraPermissions();
+    const { permission, requestPermission } = useCameraPermissions();
     const [isCapturing, setIsCapturing] = useState(false);
     const [forceCaptureEnabled, setForceCaptureEnabled] = useState(false);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Barcode state
-    const [barcodeCorners, setBarcodeCorners] = useState<{ x: number; y: number }[] | null>(null);
-    const [trackingNumber, setTrackingNumber] = useState<string | null>(null);  // stating useState could have string or null value type
-    const isScanningRef = useRef(true);  // useRef variable change won't trigger rerender
+    // Barcode scanning
+    const { scanResult, codeScanner, resetScan } = useBarcodeScanner();
+    const trackingNumber = scanResult?.value ?? null;
 
     // Track the parcel zone's position on screen
     const parcelZoneRef = useRef<{ x: number; y: number; width: number; height: number } | null>(
         null
     );
 
-    // Use the new location watcher hook
+    // Location and camera
     const { coordinate, error, latestCoordinateRef } = useLocationWatcher();
+    const { cameraRef, device, format, capturePhoto } = useCameraCapture(latestCoordinateRef);
+
     const location = coordinate;
     const errorMsg = error?.message ?? null;
+    const accuracy = coordinate?.accuracy ?? null;
 
-    // Use the custom camera capture hook with the watcher's latest coordinate ref
-    const { cameraRef, capturePhoto } = useCameraCapture(latestCoordinateRef);
-
-    const accuracy = coordinate?.accuracy ?? null;  // Optional Chaining for coordinate, if is null, will return right side of '??'
     const { badgeColor, badgeText, buttonLabel, isGreen } = useAccuracySignal(
         accuracy,
         forceCaptureEnabled
     );
 
     // Capture button requires BOTH barcode scanned AND GPS ready
-    const canCapture =
-        !!cameraRef.current && !!location && !!trackingNumber && (isGreen || forceCaptureEnabled);
+    const canCapture = !!location && !!trackingNumber && (isGreen || forceCaptureEnabled);
 
     // Fallback Timer Logic: start 5s timer on mount if not Green; clear upon Green
     useEffect(() => {
-        // Helper to clear any existing timer
         const clearTimer = () => {
             if (timerRef.current) {
-                clearTimeout(timerRef.current as any);
+                clearTimeout(timerRef.current);
                 timerRef.current = null;
             }
         };
@@ -74,55 +82,17 @@ export default function CameraScreen() {
             }, 5000);
         }
 
-        // Cleanup when unmounting
         return () => {
             clearTimer();
         };
     }, [isGreen]);
 
-    const scanDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const lastScannedDataRef = useRef<string | null>(null);
-    const stableCountRef = useRef(0);
-    const REQUIRED_STABLE_COUNT = 4; // must see same barcode 4 frames in a row
-
-    const handleBarcodeScanned = (result: BarcodeScanningResult) => {
-        if (!isScanningRef.current) return;
-        if (result.type !== 'code128') return;
-
-        // If same data as last frame, increment stable count
-        if (result.data === lastScannedDataRef.current) {
-            stableCountRef.current += 1;
-        } else {
-            // Different data — reset count, store new candidate
-            lastScannedDataRef.current = result.data;
-            stableCountRef.current = 1;
-            // Update corners live as camera moves, but don't lock yet
-            setBarcodeCorners(result.cornerPoints ?? null);
-            return;
-        }
-
-        // Update corners on every stable frame so they track smoothly
-        setBarcodeCorners(result.cornerPoints ?? null);
-
-        // Only lock in once we have enough stable consecutive readings
-        if (stableCountRef.current >= REQUIRED_STABLE_COUNT) {
-            isScanningRef.current = false;
-            setTrackingNumber(result.data);
-        }
-    };
-
     const handleRescan = () => {
-        if (scanDebounceRef.current) clearTimeout(scanDebounceRef.current);
-        lastScannedDataRef.current = null;
-        stableCountRef.current = 0;
-        setTrackingNumber(null);
-        setBarcodeCorners(null);
-        isScanningRef.current = true;
+        resetScan();
     };
 
-    // THE MAGIC OF EVERYTHING
     const handleCapture = async () => {
-        if (!canCapture) {
+        if (!canCapture || !cameraRef.current) {
             alert('Camera, location, or barcode not ready.');
             console.log('Error in handleCapture: Not available or not allowed by accuracy state');
             return;
@@ -132,13 +102,10 @@ export default function CameraScreen() {
             setIsCapturing(true);
 
             // 1) Capture photo
-            const photo = await capturePhoto({ // links to use-camera-capture.ts
-                quality: 1,
-                base64: false,
-            });
+            const photo = await capturePhoto();
 
             // 2) Build EXIF metadata from current location snapshot
-            const exifMetadata: EXIFMetadata = buildExifFromCoordinate(location); // from exif-builder.ts
+            const exifMetadata: EXIFMetadata = buildExifFromCoordinate(location); // Build EXIF metadata from current location
 
             // 3) Burn EXIF into temp file — get back the EXIF-written temp URI
             let exifUri = photo.uri;
@@ -149,8 +116,7 @@ export default function CameraScreen() {
                 console.warn('Failed to write EXIF:', e);
             }
 
-            // 4) Save to gallery in foreground — Android popup (can't suppress, Android 10 problem) appears here
-            //    while user is still on camera page, contextually makes sense
+            // 4) Save to gallery in foreground
             await saveToGalleryOnly(exifUri, 'Streamline');
 
             // 5) Build payload
@@ -173,8 +139,7 @@ export default function CameraScreen() {
                 { text: 'OK', onPress: () => router.back() },
             ]);
 
-            // 6.5) We manually use Share Sheet to send msg first due to Twilio limits
-            // Share sheet immediately — no waiting for Supabase
+            // 6.5) Share sheet immediately — no waiting for Supabase
             // Current msg is a hardcoded Landing Page where id=latest
             await Share.share({
                 message: [
@@ -230,16 +195,15 @@ export default function CameraScreen() {
         <View className="flex-1 bg-black">
             {/* Full screen camera view */}
             <CameraView
-                ref={cameraRef}
-                style={styles.camera}
-                facing="back"
-                mode="picture"
-                barcodeScannerSettings={{ barcodeTypes: ['code128'] }}
-                onBarcodeScanned={trackingNumber ? undefined : handleBarcodeScanned}
+                cameraRef={cameraRef}
+                device={device}
+                format={format}
+                isActive={true}
+                codeScanner={!trackingNumber ? codeScanner : undefined}
             />
 
             {/* Overlay split into top and bottom halves with a middle separator line */}
-            <View className="absolute inset-0">
+            <View className="absolute inset-0" pointerEvents="box-none">
                 {/* Top Half */}
                 <View style={{ flex: 1, paddingTop: insets.top + 8 }} className="relative">
                     {/* Optional Border UI */}
@@ -265,7 +229,7 @@ export default function CameraScreen() {
                     </View>
 
                     {/* Visual Guide Label (Centered in Top Half) */}
-                    <View className="absolute inset-0 items-center justify-center pointer-events-box-none">
+                    <View className="absolute inset-0 items-center justify-center pointer-events-none">
                         <Text className="text-white text-lg font-bold opacity-70">
                             CAPTURE BUILDING HERE
                         </Text>
@@ -280,7 +244,7 @@ export default function CameraScreen() {
                     style={{ flex: 1, paddingBottom: insets.bottom + 24 }}
                     className="relative"
                     onLayout={(e) => {
-                        e.target.measure((x, y, width, height, pageX, pageY) => {
+                        e.target.measure?.((x, y, width, height, pageX, pageY) => {
                             parcelZoneRef.current = { x: pageX, y: pageY, width, height };
                         });
                     }}
@@ -346,17 +310,13 @@ export default function CameraScreen() {
 }
 
 const styles = StyleSheet.create({
-    camera: {
-        flex: 1,
-        width: '100%',
-    },
     separatorLine: {
-        height: 2, // h-0.5 (0.5 * 4 = 2px)
-        width: '90%', // w-full
-        backgroundColor: '#FACC15', // bg-yellow-400 (Tailwind's default yellow-400 hex)
-        opacity: 0.8, // opacity-80
-        flexDirection: 'row', // flex-row
-        alignSelf: 'center', // items-center
-        justifyContent: 'center', // justify-center
+        height: 2,
+        width: '90%',
+        backgroundColor: '#FACC15',
+        opacity: 0.8,
+        flexDirection: 'row',
+        alignSelf: 'center',
+        justifyContent: 'center',
     },
 });

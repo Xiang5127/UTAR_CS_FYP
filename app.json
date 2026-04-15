@@ -77,9 +77,10 @@
                 }
             ],
             [
-                "expo-camera",
+                "react-native-vision-camera",
                 {
-                    "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to capture photos with GPS metadata."
+                    "cameraPermissionText": "Allow $(PRODUCT_NAME) to access your camera to capture photos with GPS metadata.",
+                    "enableCodeScanner": true
                 }
             ]
         ],
