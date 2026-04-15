@@ -25,6 +25,8 @@ export const CameraView: React.FC<CameraViewProps> = ({
     }
 
     return (
+        // return a react-native-vision-camera Camera component
+        // with the given props
         <Camera
             ref={cameraRef}
             style={styles.camera}
