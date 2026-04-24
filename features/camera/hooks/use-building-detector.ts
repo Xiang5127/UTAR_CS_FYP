@@ -74,7 +74,10 @@ export function useBuildingDetector(
 
     // ── Model loading (pass empty delegates array for CPU) ─────────────
     // Use resolved file URI when available; fall back to require ID for dev
-    const tf = useTensorflowModel(localModelUri ?? modelSource, []);
+    const tf = useTensorflowModel(
+        localModelUri ? { url: localModelUri } : modelSource,
+        []
+    );
 
     // Workaround for VisionCamera v4 worklets not natively supporting jsi::NativeState.
     // We "box" the HybridObject before it enters the worklet, and "unbox" it inside.
