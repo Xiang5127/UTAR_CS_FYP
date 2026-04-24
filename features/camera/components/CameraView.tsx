@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { Camera, CodeScanner } from 'react-native-vision-camera';
+import { Camera, CodeScanner, type ReadonlyFrameProcessor } from 'react-native-vision-camera';
 
 interface CameraViewProps {
     cameraRef: React.RefObject<Camera | null>;
@@ -8,6 +8,7 @@ interface CameraViewProps {
     format: ReturnType<typeof import('react-native-vision-camera').useCameraFormat>;
     isActive: boolean;
     codeScanner?: CodeScanner;
+    frameProcessor?: ReadonlyFrameProcessor;
 }
 
 /**
@@ -19,6 +20,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
     format,
     isActive,
     codeScanner,
+    frameProcessor,
 }) => {
     if (!device) {
         return null;
@@ -35,6 +37,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
             isActive={isActive}
             photo={true}
             codeScanner={codeScanner}
+            frameProcessor={frameProcessor}
         />
     );
 };

@@ -16,6 +16,7 @@ import {
     CameraView,
     useAccuracySignal,
     useBarcodeScanner,
+    useBuildingDetector,
     useCameraCapture,
     useCameraPermissions,
     useLocationWatcher,
@@ -46,6 +47,16 @@ export default function CameraScreen() {
     const { coordinate, error, latestCoordinateRef } = useLocationWatcher();
     const { cameraRef, device, format, capturePhoto } = useCameraCapture(latestCoordinateRef);
 
+    // Building detection (TFLite model via frame processor)
+    const {
+        confidence,
+        isBuildingDetected,
+        isModelReady,
+        isModelLoading,
+        modelError,
+        frameProcessor,
+    } = useBuildingDetector();
+
     const location = coordinate;
     const errorMsg = error?.message ?? null;
     const accuracy = coordinate?.accuracy ?? null;
@@ -55,8 +66,12 @@ export default function CameraScreen() {
         forceCaptureEnabled
     );
 
-    // Capture button requires BOTH barcode scanned AND GPS ready
-    const canCapture = !!location && !!trackingNumber && (isGreen || forceCaptureEnabled);
+    // Capture button requires barcode scanned AND GPS ready AND building detected
+    const canCapture =
+        !!location &&
+        !!trackingNumber &&
+        (isGreen || forceCaptureEnabled) &&
+        isBuildingDetected;
 
     // Fallback Timer Logic: start 5s timer on mount if not Green; clear upon Green
     useEffect(() => {
@@ -200,6 +215,7 @@ export default function CameraScreen() {
                 format={format}
                 isActive={true}
                 codeScanner={!trackingNumber ? codeScanner : undefined}
+                frameProcessor={trackingNumber ? frameProcessor : undefined}
             />
 
             {/* Overlay split into top and bottom halves with a middle separator line */}
@@ -226,6 +242,30 @@ export default function CameraScreen() {
                                 </Text>
                             </View>
                         )}
+                    </View>
+
+                    {/* DEBUG: Building detection overlay */}
+                    <View className="mx-4 mt-2">
+                        <View
+                            style={{
+                                backgroundColor: isModelLoading
+                                    ? '#6B7280'
+                                    : modelError
+                                      ? '#EF4444'
+                                      : isBuildingDetected
+                                        ? '#22C55E'
+                                        : '#F97316',
+                            }}
+                            className="px-4 py-2 rounded-lg self-start"
+                        >
+                            <Text className="text-white text-sm font-semibold">
+                                {isModelLoading
+                                    ? 'Model loading...'
+                                    : modelError
+                                      ? `Model error: ${modelError}`
+                                      : `Building: ${(confidence * 100).toFixed(1)}% ${isBuildingDetected ? '\u2713' : '\u2717'}`}
+                            </Text>
+                        </View>
                     </View>
 
                     {/* Visual Guide Label (Centered in Top Half) */}

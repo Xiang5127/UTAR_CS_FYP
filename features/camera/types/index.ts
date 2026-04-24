@@ -3,3 +3,5 @@
  */
 
 export * from './camera.types';
+export * from './detector.types';
+
