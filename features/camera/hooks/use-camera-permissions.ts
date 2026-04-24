@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Camera } from 'react-native-vision-camera';
 
 import { CameraPermissionStatus } from '../types/camera.types';
@@ -21,6 +21,18 @@ export function useCameraPermissions(): UseCameraPermissionsReturn {
 
     async function checkPermission() {
         const cameraPermission = await Camera.getCameraPermissionStatus();
+
+        // Auto-request on fresh install so the system dialog appears immediately
+        if (cameraPermission === 'not-determined') {
+            const requested = await Camera.requestCameraPermission();
+            setPermission({
+                granted: requested === 'granted',
+                status: requested as CameraPermissionStatus['status'],
+                canAskAgain: requested !== 'denied',
+            });
+            return;
+        }
+
         setPermission({
             granted: cameraPermission === 'granted',
             status: cameraPermission as CameraPermissionStatus['status'],
