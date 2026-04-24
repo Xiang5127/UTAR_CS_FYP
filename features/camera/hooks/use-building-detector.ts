@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from 'react';
+import { Asset } from 'expo-asset';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTensorflowModel } from 'react-native-fast-tflite';
 import { NitroModules } from 'react-native-nitro-modules';
 import { useSharedValue } from 'react-native-reanimated';
@@ -48,8 +49,32 @@ export function useBuildingDetector(
     const [confidence, setConfidence] = useState(0);
     const [isBuildingDetected, setIsBuildingDetected] = useState(false);
 
+    // ── Resolve asset to local file:// URI (fixes Android standalone builds) ─
+    // require() returns a numeric asset ID. In dev, react-native-fast-tflite
+    // resolves it fine, but in production the Android resolver produces a
+    // path without a protocol ("assets_model_...") → MalformedURLException.
+    // Pre-resolving via expo-asset gives us a proper file:///... URI.
+    const [localModelUri, setLocalModelUri] = useState<string | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        Asset.loadAsync(modelSource)
+            .then(([asset]) => {
+                if (!cancelled && asset.localUri) {
+                    setLocalModelUri(asset.localUri);
+                }
+            })
+            .catch((e) =>
+                console.error('[BuildingDetector] Failed to resolve model asset:', e)
+            );
+        return () => {
+            cancelled = true;
+        };
+    }, [modelSource]);
+
     // ── Model loading (pass empty delegates array for CPU) ─────────────
-    const tf = useTensorflowModel(modelSource, []);
+    // Use resolved file URI when available; fall back to require ID for dev
+    const tf = useTensorflowModel(localModelUri ?? modelSource, []);
 
     // Workaround for VisionCamera v4 worklets not natively supporting jsi::NativeState.
     // We "box" the HybridObject before it enters the worklet, and "unbox" it inside.
