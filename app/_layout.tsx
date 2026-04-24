@@ -1,3 +1,4 @@
+import { FieldTestProvider } from '@/features/field-test';
 import * as MediaLibrary from 'expo-media-library';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -13,7 +14,7 @@ export default function RootLayout() {
     }, []);
 
     return (
-        <>
+        <FieldTestProvider>
             {/*
             In Expo Router, you simply place a _layout.tsx file inside a folder.
             If that file exports a <Stack />, everything in that folder is a stack.
@@ -27,6 +28,6 @@ export default function RootLayout() {
                 />
             </Stack>
             <StatusBar style="auto" />
-        </>
+        </FieldTestProvider>
     );
 }

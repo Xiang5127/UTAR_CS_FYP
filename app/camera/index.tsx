@@ -1,3 +1,4 @@
+import * as Battery from 'expo-battery';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -21,10 +22,12 @@ import {
     useCameraPermissions,
     useLocationWatcher,
 } from '@/features/camera';
+import { FieldTestBanner, GroundTruthModal, useFieldTest } from '@/features/field-test';
 import { EXIFMetadata } from '@/types';
 import { CapturePayload, sendToAPI } from '@/utils/api';
 import { buildExifFromCoordinate } from '@/utils/exif-builder';
 import { burnExifOnly, saveToGalleryOnly } from '@/utils/exif-processor';
+import { FieldTestPayload, sendToFieldTestAPI } from '@/utils/field-test-api';
 
 export default function CameraScreen() {
     const router = useRouter();
@@ -33,6 +36,17 @@ export default function CameraScreen() {
     const [isCapturing, setIsCapturing] = useState(false);
     const [forceCaptureEnabled, setForceCaptureEnabled] = useState(false);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // ── Field Test Mode ──
+    const { isTestMode, toggleTestMode } = useFieldTest();
+    const tapCountRef = useRef(0);
+    const lastTapTimeRef = useRef(0);
+    const screenMountTime = useRef(Date.now());
+    const barcodeScanStartRef = useRef(Date.now());
+    const barcodeDetectedAtRef = useRef<number | null>(null);
+    const gpsReadyAtRef = useRef<number | null>(null);
+    const [groundTruthVisible, setGroundTruthVisible] = useState(false);
+    const groundTruthResolverRef = useRef<((value: boolean) => void) | null>(null);
 
     // Barcode scanning
     const { scanResult, codeScanner, resetScan } = useBarcodeScanner();
@@ -66,12 +80,12 @@ export default function CameraScreen() {
         forceCaptureEnabled
     );
 
-    // Capture button requires barcode scanned AND GPS ready AND building detected
+    // Capture button requires barcode scanned AND GPS ready AND (in prod) building detected
     const canCapture =
         !!location &&
         !!trackingNumber &&
         (isGreen || forceCaptureEnabled) &&
-        isBuildingDetected;
+        (isTestMode || isBuildingDetected);
 
     // Fallback Timer Logic: start 5s timer on mount if not Green; clear upon Green
     useEffect(() => {
@@ -102,6 +116,49 @@ export default function CameraScreen() {
         };
     }, [isGreen]);
 
+    // ── Field Test: Timing trackers ──
+    useEffect(() => {
+        if (trackingNumber && !barcodeDetectedAtRef.current) {
+            barcodeDetectedAtRef.current = Date.now();
+        }
+        if (!trackingNumber) {
+            barcodeScanStartRef.current = Date.now();
+            barcodeDetectedAtRef.current = null;
+        }
+    }, [trackingNumber]);
+
+    // Track when GPS becomes usable (green OR force-capture timer fired)
+    useEffect(() => {
+        if ((isGreen || forceCaptureEnabled) && !gpsReadyAtRef.current) {
+            gpsReadyAtRef.current = Date.now();
+        }
+    }, [isGreen, forceCaptureEnabled]);
+
+    const handleTripleTap = () => {
+        const now = Date.now();
+        if (now - lastTapTimeRef.current > 800) {
+            tapCountRef.current = 0;
+        }
+        tapCountRef.current += 1;
+        lastTapTimeRef.current = now;
+        if (tapCountRef.current >= 3) {
+            toggleTestMode();
+            tapCountRef.current = 0;
+        }
+    };
+
+    const requestGroundTruth = (): Promise<boolean> =>
+        new Promise((resolve) => {
+            groundTruthResolverRef.current = resolve;
+            setGroundTruthVisible(true);
+        });
+
+    const handleGroundTruthResponse = (isBuilding: boolean) => {
+        groundTruthResolverRef.current?.(isBuilding);
+        groundTruthResolverRef.current = null;
+        setGroundTruthVisible(false);
+    };
+
     const handleRescan = () => {
         resetScan();
     };
@@ -120,13 +177,16 @@ export default function CameraScreen() {
             const photo = await capturePhoto();
 
             // 2) Build EXIF metadata from current location snapshot
-            const exifMetadata: EXIFMetadata = buildExifFromCoordinate(location); // Build EXIF metadata from current location
+            const exifMetadata: EXIFMetadata = buildExifFromCoordinate(location);
 
-            // 3) Burn EXIF into temp file — get back the EXIF-written temp URI
+            // 3) Burn EXIF into temp file — timed for field test metrics
             let exifUri = photo.uri;
+            let exifWriteMs: number | null = null;
             try {
+                const t0 = Date.now();
                 const written = await burnExifOnly(photo.uri, exifMetadata);
                 exifUri = written.uri;
+                exifWriteMs = Date.now() - t0;
             } catch (e) {
                 console.warn('Failed to write EXIF:', e);
             }
@@ -134,42 +194,89 @@ export default function CameraScreen() {
             // 4) Save to gallery in foreground
             await saveToGalleryOnly(exifUri, 'Streamline');
 
-            // 5) Build payload
-            const payload: CapturePayload = {
-                photoUri: exifUri,
-                location: {
-                    latitude: location.latitude,
-                    longitude: location.longitude,
-                    accuracy: location.accuracy,
-                    altitude: location.altitude,
-                    timestamp: location.timestamp,
-                },
-                exif: exifMetadata,
-                accuracyStatus: isGreen ? 'precise' : 'override',
-                trackingNumber: trackingNumber!,
-            };
+            if (isTestMode) {
+                // ── Field Test Flow ──
+                const groundTruth = await requestGroundTruth();
 
-            // 6) Show success after gallery save confirms
-            Alert.alert('Success', 'Photo captured, EXIF written, and saved to gallery!');
+                const fieldPayload: FieldTestPayload = {
+                    photoUri: exifUri,
+                    location: {
+                        latitude: location.latitude,
+                        longitude: location.longitude,
+                        accuracy: location.accuracy,
+                        altitude: location.altitude,
+                        timestamp: location.timestamp,
+                        speed: location.speed,
+                        heading: location.heading,
+                    },
+                    accuracyStatus: isGreen ? 'precise' : 'override',
+                    trackingNumber: trackingNumber!,
+                    modelConfidence: confidence,
+                    buildingDetected: isBuildingDetected,
+                    detectionOverridden: !isBuildingDetected,
+                    groundTruthIsBuilding: groundTruth,
+                    barcodeScanMs: barcodeDetectedAtRef.current
+                        ? barcodeDetectedAtRef.current - barcodeScanStartRef.current
+                        : null,
+                    gpsFixMs: gpsReadyAtRef.current
+                        ? gpsReadyAtRef.current - screenMountTime.current
+                        : null,
+                    timeToCaptureMs: barcodeDetectedAtRef.current
+                        ? Date.now() - barcodeDetectedAtRef.current
+                        : null,
+                    exifWriteMs,
+                    batteryLevel: await Battery.getBatteryLevelAsync(),
+                };
 
-            // 6.5) Share sheet immediately — no waiting for Supabase
-            // Current msg is a hardcoded Landing Page where id=latest
-            await Share.share({
-                message: [
-                    `Delivery Confirmed`,
-                    ``,
-                    `Tracking: ${trackingNumber}`,
-                    `Time: ${new Date().toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })}`,
-                    ``,
-                    `View Proof of Delivery:`,
-                    `https://streamline-pod-landing-page.vercel.app/delivery?id=${trackingNumber}`,
-                ].join('\n'),
-            });
+                sendToFieldTestAPI(fieldPayload).catch((e) => {
+                    console.warn('[FieldTest] Background upload failed:', e);
+                });
 
-            // 7) Upload to Supabase in background
-            sendToAPI(payload).catch((e) => {
-                console.warn('Background upload failed:', e);
-            });
+                await Share.share({
+                    message: [
+                        `Delivery Confirmed`,
+                        ``,
+                        `Tracking: ${trackingNumber}`,
+                        `Time: ${new Date().toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })}`,
+                        ``,
+                        `View Proof of Delivery:`,
+                        `https://streamline-pod-landing-page.vercel.app/delivery?id=${trackingNumber}`,
+                    ].join('\n'),
+                });
+            } else {
+                // ── Normal Production Flow ──
+                const payload: CapturePayload = {
+                    photoUri: exifUri,
+                    location: {
+                        latitude: location.latitude,
+                        longitude: location.longitude,
+                        accuracy: location.accuracy,
+                        altitude: location.altitude,
+                        timestamp: location.timestamp,
+                    },
+                    exif: exifMetadata,
+                    accuracyStatus: isGreen ? 'precise' : 'override',
+                    trackingNumber: trackingNumber!,
+                };
+
+                Alert.alert('Success', 'Photo captured, EXIF written, and saved to gallery!');
+
+                await Share.share({
+                    message: [
+                        `Delivery Confirmed`,
+                        ``,
+                        `Tracking: ${trackingNumber}`,
+                        `Time: ${new Date().toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })}`,
+                        ``,
+                        `View Proof of Delivery:`,
+                        `https://streamline-pod-landing-page.vercel.app/delivery?id=${trackingNumber}`,
+                    ].join('\n'),
+                });
+
+                sendToAPI(payload).catch((e) => {
+                    console.warn('Background upload failed:', e);
+                });
+            }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to capture photo';
             Alert.alert('Error', errorMessage);
@@ -224,7 +331,11 @@ export default function CameraScreen() {
                     <View className="absolute bottom-10 right-10 w-8 h-8 border-b-2 border-r-2 border-white/50" />
                     <View className="absolute bottom-10 left-10 w-8 h-8 border-b-2 border-l-2 border-white/50" />
 
-                    {/* GPS meter tracker */}
+                    {/* Field Test Banner */}
+                    {isTestMode && <FieldTestBanner />}
+
+                    {/* GPS meter tracker — triple-tap to toggle field test mode */}
+                    <TouchableOpacity onPress={handleTripleTap} activeOpacity={1}>
                     <View className="mx-4">
                         {errorMsg ? (
                             <View className="bg-red-500 px-4 py-2 rounded-lg">
@@ -241,6 +352,7 @@ export default function CameraScreen() {
                             </View>
                         )}
                     </View>
+                    </TouchableOpacity>
 
                     {/* DEBUG: Building detection overlay */}
                     <View className="mx-4 mt-2">
@@ -343,6 +455,13 @@ export default function CameraScreen() {
                     <View className="absolute top-10 right-10 w-8 h-8 border-t-2 border-r-2 border-white/50" />
                 </View>
             </View>
+
+            {/* Ground truth annotation modal (field test only) */}
+            <GroundTruthModal
+                visible={groundTruthVisible}
+                confidence={confidence}
+                onResponse={handleGroundTruthResponse}
+            />
         </View>
     );
 }
