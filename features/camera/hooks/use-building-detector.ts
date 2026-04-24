@@ -1,6 +1,6 @@
 import { Asset } from 'expo-asset';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTensorflowModel } from 'react-native-fast-tflite';
+import { loadTensorflowModel, type TfliteModel } from 'react-native-fast-tflite';
 import { NitroModules } from 'react-native-nitro-modules';
 import { useSharedValue } from 'react-native-reanimated';
 import { useFrameProcessor } from 'react-native-vision-camera';
@@ -49,39 +49,48 @@ export function useBuildingDetector(
     const [confidence, setConfidence] = useState(0);
     const [isBuildingDetected, setIsBuildingDetected] = useState(false);
 
-    // ── Resolve asset to local file:// URI (fixes Android standalone builds) ─
-    // require() returns a numeric asset ID. In dev, react-native-fast-tflite
-    // resolves it fine, but in production the Android resolver produces a
-    // path without a protocol ("assets_model_...") → MalformedURLException.
-    // Pre-resolving via expo-asset gives us a proper file:///... URI.
-    const [localModelUri, setLocalModelUri] = useState<string | null>(null);
+    // ── Resolve asset → load model (two-phase, fixes Android standalone) ─
+    // require() returns a numeric asset ID. react-native-fast-tflite's
+    // internal Image.resolveAssetSource() produces a protocol-less path on
+    // Android production builds → native MalformedURLException crash.
+    // Phase 1: expo-asset resolves the bundled .tflite to a file:// URI.
+    // Phase 2: loadTensorflowModel (imperative) loads from that URI.
+    // This guarantees we NEVER pass the raw require() number to TFLite.
+    const [model, setModel] = useState<TfliteModel | null>(null);
+    const [modelState, setModelState] = useState<'loading' | 'loaded' | 'error'>('loading');
+    const [modelError, setModelError] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
+        setModelState('loading');
+        setModelError(null);
+
         Asset.loadAsync(modelSource)
             .then(([asset]) => {
-                if (!cancelled && asset.localUri) {
-                    setLocalModelUri(asset.localUri);
-                }
+                if (cancelled || !asset.localUri) return;
+                return loadTensorflowModel({ url: asset.localUri }, []);
             })
-            .catch((e) =>
-                console.error('[BuildingDetector] Failed to resolve model asset:', e)
-            );
+            .then((loaded) => {
+                if (cancelled || !loaded) return;
+                setModel(loaded);
+                setModelState('loaded');
+            })
+            .catch((e) => {
+                if (cancelled) return;
+                const msg = e instanceof Error ? e.message : String(e);
+                console.error('[BuildingDetector] Model load failed:', msg);
+                setModelError(msg);
+                setModelState('error');
+            });
+
         return () => {
             cancelled = true;
         };
     }, [modelSource]);
 
-    // ── Model loading (pass empty delegates array for CPU) ─────────────
-    // Use resolved file URI when available; fall back to require ID for dev
-    const tf = useTensorflowModel(
-        localModelUri ? { url: localModelUri } : modelSource,
-        []
-    );
-
     // Workaround for VisionCamera v4 worklets not natively supporting jsi::NativeState.
     // We "box" the HybridObject before it enters the worklet, and "unbox" it inside.
-    const boxedModel = tf.state === 'loaded' ? NitroModules.box(tf.model) : undefined;
+    const boxedModel = model ? NitroModules.box(model) : undefined;
 
     // ── Resize plugin (runs on worklet thread) ─────────────────────────
     const { resize } = useResizePlugin();
@@ -137,9 +146,9 @@ export function useBuildingDetector(
     return {
         confidence,
         isBuildingDetected,
-        isModelReady: tf.state === 'loaded',
-        isModelLoading: tf.state === 'loading',
-        modelError: tf.state === 'error' ? ((tf.error as Error)?.message ?? 'Unknown model error') : null,
+        isModelReady: modelState === 'loaded',
+        isModelLoading: modelState === 'loading',
+        modelError,
         frameProcessor,
     };
 }
