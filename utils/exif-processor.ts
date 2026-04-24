@@ -118,16 +118,19 @@ export async function saveToGalleryOnly(fileUri: string, albumName?: string): Pr
     try {
         MediaLibrary = await import('expo-media-library');
     } catch {
+        console.warn('[saveToGalleryOnly] expo-media-library not available');
         return;
     }
 
-    let permission = await MediaLibrary.getPermissionsAsync(true);
-    if (!permission.granted && permission.canAskAgain) {
-        permission = await MediaLibrary.requestPermissionsAsync(true);
+    // Request full read+write permissions (write-only is not enough for album ops on Android)
+    const { granted } = await MediaLibrary.requestPermissionsAsync();
+    if (!granted) {
+        console.warn('[saveToGalleryOnly] Media library permission not granted');
+        return;
     }
-    if (!permission.granted) return;
 
     const asset = await MediaLibrary.createAssetAsync(fileUri);
+    console.log('[saveToGalleryOnly] Asset created:', asset.uri);
 
     if (albumName?.trim()) {
         try {
@@ -137,8 +140,9 @@ export async function saveToGalleryOnly(fileUri: string, albumName?: string): Pr
             } else {
                 await MediaLibrary.createAlbumAsync(albumName, asset, false);
             }
-        } catch {
-            // asset already created, swallow album error
+            console.log(`[saveToGalleryOnly] Saved to album "${albumName}"`);
+        } catch (e) {
+            console.warn('[saveToGalleryOnly] Album operation failed:', e);
         }
     }
 }

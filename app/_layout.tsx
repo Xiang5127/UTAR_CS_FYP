@@ -1,9 +1,17 @@
+import * as MediaLibrary from 'expo-media-library';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import 'react-native-reanimated';
 import '../global.css';
 
 export default function RootLayout() {
+    useEffect(() => {
+        MediaLibrary.requestPermissionsAsync().then(({ granted }) => {
+            console.log('[RootLayout] Media library permission granted:', granted);
+        });
+    }, []);
+
     return (
         <>
             {/*

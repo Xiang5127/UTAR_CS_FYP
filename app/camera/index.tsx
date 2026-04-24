@@ -150,9 +150,7 @@ export default function CameraScreen() {
             };
 
             // 6) Show success after gallery save confirms
-            Alert.alert('Success', 'Photo captured, EXIF written, and saved to gallery!', [
-                { text: 'OK', onPress: () => router.back() },
-            ]);
+            Alert.alert('Success', 'Photo captured, EXIF written, and saved to gallery!');
 
             // 6.5) Share sheet immediately — no waiting for Supabase
             // Current msg is a hardcoded Landing Page where id=latest
@@ -164,7 +162,7 @@ export default function CameraScreen() {
                     `Time: ${new Date().toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' })}`,
                     ``,
                     `View Proof of Delivery:`,
-                    `https://streamline-pod-landing-page.vercel.app/delivery?id=latest`,
+                    `https://streamline-pod-landing-page.vercel.app/delivery?id=${trackingNumber}`,
                 ].join('\n'),
             });
 

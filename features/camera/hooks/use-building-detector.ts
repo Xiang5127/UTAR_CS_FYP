@@ -68,9 +68,6 @@ export function useBuildingDetector(
     const onDetectionResult = useCallback((conf: number) => {
         setConfidence(conf);
         setIsBuildingDetected(conf >= thresholdRef.current);
-        console.log(
-            `[BuildingDetector] confidence=${conf.toFixed(3)} | detected=${conf >= thresholdRef.current}`
-        );
     }, []);
 
     // Wrap the JS callback so it can be called from worklet thread
