@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streamline POD System Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'JetBrains Mono',monospace;background:#020617;min-height:100vh;padding:2rem;color:white}
+    .container{max-width:1300px;margin:0 auto}
+    .header{margin-bottom:2rem}
+    .header-row{display:flex;align-items:center;gap:1rem;margin-bottom:0.5rem}
+    .pulse-dot{width:12px;height:12px;background:#22d3ee;border-radius:50%;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+    h1{font-size:1.5rem;font-weight:700;letter-spacing:-0.025em}
+    .subtitle{color:#94a3b8;font-size:0.875rem;margin-left:1.75rem}
+    .diagram-container{background:rgba(15,23,42,0.5);border-radius:1rem;border:1px solid #1e293b;padding:1.5rem;overflow-x:auto}
+    svg{width:100%;min-width:1050px;display:block}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-top:2rem}
+    .card{background:rgba(15,23,42,0.5);border-radius:0.75rem;border:1px solid #1e293b;padding:1.25rem}
+    .card-header{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem}
+    .card-dot{width:8px;height:8px;border-radius:50%}
+    .card-dot.cyan{background:#22d3ee}
+    .card-dot.emerald{background:#34d399}
+    .card-dot.violet{background:#a78bfa}
+    .card-dot.amber{background:#fbbf24}
+    .card-dot.rose{background:#fb7185}
+    .card h3{font-size:0.875rem;font-weight:600}
+    .card ul{list-style:none;color:#94a3b8;font-size:0.75rem}
+    .card li{margin-bottom:0.375rem}
+    .footer{text-align:center;margin-top:1.5rem;color:#475569;font-size:0.75rem}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>Streamline — System Architecture</h1>
+      </div>
+      <p class="subtitle">3-Layer POD Image Verification for Last-Mile Logistics · React Native + Supabase + Vercel</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1100 920">
+        <defs>
+          <marker id="ah" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#64748b"/></marker>
+          <marker id="ah-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#22d3ee"/></marker>
+          <marker id="ah-amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#fbbf24"/></marker>
+          <marker id="ah-violet" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#a78bfa"/></marker>
+          <marker id="ah-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#fb7185"/></marker>
+          <marker id="ah-gray" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#475569"/></marker>
+          <marker id="ah-emerald" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#34d399"/></marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/></pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+
+        <!-- ======================== ARROWS (drawn first, behind components) ======================== -->
+
+        <!-- Edge internal: HUD group → Capture Gate -->
+        <line x1="280" y1="145" x2="318" y2="145" stroke="#22d3ee" stroke-width="1.2" marker-end="url(#ah-cyan)"/>
+        <!-- GPS → Capture Gate -->
+        <path d="M 250 250 L 340 250 Q 360 250 360 230 L 360 178" fill="none" stroke="#22d3ee" stroke-width="1.2" marker-end="url(#ah-cyan)"/>
+        <!-- Capture Gate → EXIF -->
+        <line x1="448" y1="135" x2="480" y2="95" stroke="#22d3ee" stroke-width="1.2" marker-end="url(#ah-cyan)"/>
+        <!-- EXIF → SHA-256 -->
+        <line x1="545" y1="110" x2="545" y2="168" stroke="#22d3ee" stroke-width="1.2" marker-end="url(#ah-cyan)"/>
+        <!-- SHA-256 → Upload -->
+        <line x1="615" y1="195" x2="658" y2="155" stroke="#22d3ee" stroke-width="1.2" marker-end="url(#ah-cyan)"/>
+        <!-- EXIF → Gallery Save (secondary path) -->
+        <path d="M 613 95 L 640 95 Q 658 95 658 115 L 658 218" fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#ah)"/>
+        <text x="650" y="195" fill="#94a3b8" font-size="6" text-anchor="end">save</text>
+        <!-- Upload → Share Sheet -->
+        <line x1="788" y1="140" x2="828" y2="140" stroke="#22d3ee" stroke-width="1.2" marker-end="url(#ah-cyan)"/>
+
+        <!-- Edge → Cloud: Upload to Storage -->
+        <line x1="720" y1="173" x2="720" y2="400" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#ah-amber)"/>
+        <text x="730" y="310" fill="#fbbf24" font-size="7" transform="rotate(90,730,310)">Upload JPEG</text>
+        <!-- Edge → Cloud: Upload to DB -->
+        <line x1="750" y1="173" x2="750" y2="400" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ah-violet)"/>
+        <text x="760" y="310" fill="#a78bfa" font-size="7" transform="rotate(90,760,310)">INSERT record</text>
+
+        <!-- Cloud internal: DB → Edge Fn (dormant) -->
+        <line x1="590" y1="450" x2="638" y2="450" stroke="#475569" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#ah-gray)"/>
+        <!-- Edge Fn → Twilio (dormant) -->
+        <line x1="808" y1="450" x2="848" y2="450" stroke="#475569" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#ah-gray)"/>
+        <!-- DB → Siamese (PoC dashed) -->
+        <line x1="480" y1="475" x2="480" y2="528" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#ah-rose)"/>
+        <text x="492" y="508" fill="#fb7185" font-size="7">historical images</text>
+        <!-- Siamese → Mobile (PoC dashed) -->
+        <path d="M 380 555 L 60 555 Q 40 555 40 535 L 40 360" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#ah-rose)"/>
+        <text x="100" y="548" fill="#fb7185" font-size="7">verdict → driver</text>
+
+        <!-- Cloud → Presentation: DB → Landing Page -->
+        <line x1="480" y1="475" x2="340" y2="680" stroke="#34d399" stroke-width="1.2" marker-end="url(#ah-emerald)"/>
+        <text x="370" y="610" fill="#34d399" font-size="7">query by tracking_number</text>
+
+        <!-- Share Sheet → Recipient (outside layers) -->
+        <path d="M 900 173 L 900 780 Q 900 800 880 800 L 270 800" fill="none" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#ah)"/>
+        <text x="910" y="500" fill="#94a3b8" font-size="7" transform="rotate(90,910,500)">WhatsApp link</text>
+        <!-- Recipient → Landing Page -->
+        <line x1="210" y1="790" x2="250" y2="730" stroke="#34d399" stroke-width="1.2" marker-end="url(#ah-emerald)"/>
+
+        <!-- ======================== LAYER 1: EDGE (Driver's Mobile Device) ======================== -->
+        <rect x="15" y="15" width="1070" height="340" rx="12" fill="rgba(8,51,68,0.08)" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="8,4"/>
+        <text x="30" y="34" fill="#22d3ee" font-size="10" font-weight="700">LAYER 1 — Edge Layer (Driver's Mobile Device)</text>
+        <text x="30" y="46" fill="#22d3ee" font-size="7">React Native 0.81 · Expo SDK 54 · On-Device Processing</text>
+
+        <!-- Driver Actor -->
+        <rect x="25" y="70" width="60" height="45" rx="6" fill="#0f172a"/><rect x="25" y="70" width="60" height="45" rx="6" fill="rgba(30,41,59,0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="55" y="90" fill="white" font-size="10" font-weight="600" text-anchor="middle">Driver</text>
+        <text x="55" y="102" fill="#94a3b8" font-size="7" text-anchor="middle">Actor</text>
+
+        <!-- Dual-Layer HUD Group boundary -->
+        <rect x="108" y="55" width="175" height="205" rx="8" fill="rgba(8,51,68,0.15)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="118" y="70" fill="#22d3ee" font-size="8" font-weight="600">Dual-Layer Camera HUD</text>
+        <text x="118" y="80" fill="#22d3ee" font-size="6">react-native-vision-camera v4</text>
+
+        <!-- Building Detector (top HUD) -->
+        <rect x="118" y="88" width="155" height="50" rx="6" fill="#0f172a"/><rect x="118" y="88" width="155" height="50" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="195" y="107" fill="white" font-size="10" font-weight="600" text-anchor="middle">Building Detector</text>
+        <text x="195" y="119" fill="#94a3b8" font-size="7" text-anchor="middle">TFLite 224×224 · ≥80%</text>
+        <text x="195" y="130" fill="#22d3ee" font-size="6" text-anchor="middle">Top HUD · Frame Processor</text>
+
+        <!-- Barcode Scanner (bottom HUD) -->
+        <rect x="118" y="148" width="155" height="50" rx="6" fill="#0f172a"/><rect x="118" y="148" width="155" height="50" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="195" y="167" fill="white" font-size="10" font-weight="600" text-anchor="middle">Barcode Scanner</text>
+        <text x="195" y="179" fill="#94a3b8" font-size="7" text-anchor="middle">Code-128 · 4-frame lock</text>
+        <text x="195" y="190" fill="#22d3ee" font-size="6" text-anchor="middle">Bottom HUD · useCodeScanner</text>
+
+        <!-- GPS Watcher -->
+        <rect x="118" y="220" width="155" height="45" rx="6" fill="#0f172a"/><rect x="118" y="220" width="155" height="45" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="195" y="239" fill="white" font-size="10" font-weight="600" text-anchor="middle">GPS Watcher</text>
+        <text x="195" y="251" fill="#94a3b8" font-size="7" text-anchor="middle">expo-location · BestForNav</text>
+
+        <!-- Capture Gate -->
+        <rect x="320" y="115" width="130" height="55" rx="6" fill="#0f172a"/><rect x="320" y="115" width="130" height="55" rx="6" fill="rgba(136,19,55,0.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="385" y="137" fill="white" font-size="10" font-weight="600" text-anchor="middle">Capture Gate</text>
+        <text x="385" y="149" fill="#94a3b8" font-size="7" text-anchor="middle">Barcode ∧ GPS ∧ Building</text>
+        <text x="385" y="161" fill="#fb7185" font-size="6" text-anchor="middle">All 3 required to enable</text>
+
+        <!-- EXIF Injector -->
+        <rect x="483" y="65" width="130" height="50" rx="6" fill="#0f172a"/><rect x="483" y="65" width="130" height="50" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="548" y="85" fill="white" font-size="10" font-weight="600" text-anchor="middle">EXIF Injector</text>
+        <text x="548" y="97" fill="#94a3b8" font-size="7" text-anchor="middle">GPS + UTC timestamps</text>
+        <text x="548" y="108" fill="#34d399" font-size="6" text-anchor="middle">@lodev09/react-native-exify</text>
+
+        <!-- SHA-256 Hasher -->
+        <rect x="483" y="170" width="130" height="50" rx="6" fill="#0f172a"/><rect x="483" y="170" width="130" height="50" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="548" y="190" fill="white" font-size="10" font-weight="600" text-anchor="middle">SHA-256 Hasher</text>
+        <text x="548" y="202" fill="#94a3b8" font-size="7" text-anchor="middle">Tamper detection</text>
+        <text x="548" y="213" fill="#34d399" font-size="6" text-anchor="middle">js-sha256</text>
+
+        <!-- Upload Module -->
+        <rect x="660" y="105" width="130" height="70" rx="6" fill="#0f172a"/><rect x="660" y="105" width="130" height="70" rx="6" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="725" y="128" fill="white" font-size="10" font-weight="600" text-anchor="middle">Upload Module</text>
+        <text x="725" y="141" fill="#94a3b8" font-size="7" text-anchor="middle">→ Supabase Storage</text>
+        <text x="725" y="153" fill="#94a3b8" font-size="7" text-anchor="middle">→ Supabase DB</text>
+        <text x="725" y="167" fill="#fbbf24" font-size="6" text-anchor="middle">@supabase/supabase-js v2</text>
+
+        <!-- Gallery Save -->
+        <rect x="660" y="220" width="130" height="45" rx="6" fill="#0f172a"/><rect x="660" y="220" width="130" height="45" rx="6" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="725" y="239" fill="white" font-size="10" font-weight="600" text-anchor="middle">Gallery Save</text>
+        <text x="725" y="253" fill="#94a3b8" font-size="7" text-anchor="middle">expo-media-library</text>
+
+        <!-- Share Sheet -->
+        <rect x="830" y="115" width="120" height="60" rx="6" fill="#0f172a"/><rect x="830" y="115" width="120" height="60" rx="6" fill="rgba(30,41,59,0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="890" y="138" fill="white" font-size="10" font-weight="600" text-anchor="middle">Share Sheet</text>
+        <text x="890" y="150" fill="#94a3b8" font-size="7" text-anchor="middle">WhatsApp link</text>
+        <text x="890" y="162" fill="#94a3b8" font-size="6" text-anchor="middle">RN Share API</text>
+
+        <!-- Driver → HUD -->
+        <line x1="85" y1="92" x2="116" y2="113" stroke="#22d3ee" stroke-width="1.2" marker-end="url(#ah-cyan)"/>
+
+        <!-- ======================== LAYER 2: CLOUD (Supabase BaaS) ======================== -->
+        <rect x="15" y="395" width="1070" height="225" rx="12" fill="rgba(120,53,15,0.06)" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="8,4"/>
+        <text x="30" y="414" fill="#fbbf24" font-size="10" font-weight="700">LAYER 2 — Cloud Layer (Supabase BaaS)</text>
+        <text x="30" y="426" fill="#fbbf24" font-size="7">Managed PostgreSQL · S3-Compatible Storage · Deno Edge Functions</text>
+
+        <!-- Supabase Storage -->
+        <rect x="120" y="435" width="170" height="55" rx="6" fill="#0f172a"/><rect x="120" y="435" width="170" height="55" rx="6" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="205" y="457" fill="white" font-size="10" font-weight="600" text-anchor="middle">Supabase Storage</text>
+        <text x="205" y="469" fill="#94a3b8" font-size="7" text-anchor="middle">Bucket: delivery-proofs</text>
+        <text x="205" y="481" fill="#fbbf24" font-size="6" text-anchor="middle">Public URLs · S3-compatible</text>
+
+        <!-- Supabase PostgreSQL -->
+        <rect x="370" y="435" width="220" height="55" rx="6" fill="#0f172a"/><rect x="370" y="435" width="220" height="55" rx="6" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="480" y="455" fill="white" font-size="10" font-weight="600" text-anchor="middle">Supabase PostgreSQL</text>
+        <text x="480" y="467" fill="#94a3b8" font-size="7" text-anchor="middle">Table: delivery_records</text>
+        <text x="480" y="479" fill="#a78bfa" font-size="6" text-anchor="middle">image_url · image_hash · GPS · tracking_number</text>
+
+        <!-- Edge Function (DORMANT) -->
+        <rect x="640" y="435" width="170" height="55" rx="6" fill="#0f172a"/><rect x="640" y="435" width="170" height="55" rx="6" fill="rgba(30,41,59,0.2)" stroke="#475569" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="725" y="455" fill="#475569" font-size="10" font-weight="600" text-anchor="middle">Edge Function</text>
+        <text x="725" y="467" fill="#475569" font-size="7" text-anchor="middle">notify-delivery (Deno)</text>
+        <text x="725" y="479" fill="#475569" font-size="6" text-anchor="middle">DORMANT — not in production</text>
+
+        <!-- Twilio (DORMANT) -->
+        <rect x="850" y="435" width="110" height="55" rx="6" fill="#0f172a"/><rect x="850" y="435" width="110" height="55" rx="6" fill="rgba(30,41,59,0.2)" stroke="#475569" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="905" y="457" fill="#475569" font-size="10" font-weight="600" text-anchor="middle">Twilio</text>
+        <text x="905" y="469" fill="#475569" font-size="7" text-anchor="middle">SMS API</text>
+        <text x="905" y="481" fill="#475569" font-size="6" text-anchor="middle">DORMANT</text>
+
+        <!-- Siamese Inference Service (PoC) -->
+        <rect x="370" y="530" width="220" height="65" rx="6" fill="#0f172a"/><rect x="370" y="530" width="220" height="65" rx="6" fill="rgba(136,19,55,0.15)" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="6,4"/>
+        <text x="480" y="550" fill="#fb7185" font-size="10" font-weight="600" text-anchor="middle">Siamese Inference Service</text>
+        <text x="480" y="563" fill="#fb7185" font-size="7" text-anchor="middle">Cross-temporal building comparison</text>
+        <text x="480" y="575" fill="#fb7185" font-size="6" text-anchor="middle">PoC — Validated independently · Not integrated</text>
+        <text x="480" y="588" fill="#94a3b8" font-size="6" text-anchor="middle">Python · TensorFlow · Siamese Network</text>
+
+        <!-- ======================== LAYER 3: PRESENTATION (Web) ======================== -->
+        <rect x="15" y="660" width="1070" height="110" rx="12" fill="rgba(6,78,59,0.06)" stroke="#34d399" stroke-width="1.2" stroke-dasharray="8,4"/>
+        <text x="30" y="679" fill="#34d399" font-size="10" font-weight="700">LAYER 3 — Presentation Layer (Web)</text>
+        <text x="30" y="691" fill="#34d399" font-size="7">Vercel Deployment · Streamlit · Recipient-Facing</text>
+
+        <!-- POD Landing Page -->
+        <rect x="250" y="700" width="200" height="55" rx="6" fill="#0f172a"/><rect x="250" y="700" width="200" height="55" rx="6" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="350" y="720" fill="white" font-size="10" font-weight="600" text-anchor="middle">POD Landing Page</text>
+        <text x="350" y="732" fill="#94a3b8" font-size="7" text-anchor="middle">Streamlit on Vercel</text>
+        <text x="350" y="744" fill="#34d399" font-size="6" text-anchor="middle">?id=tracking_number → display POD</text>
+
+        <!-- Siamese Web UI (PoC) -->
+        <rect x="540" y="700" width="200" height="55" rx="6" fill="#0f172a"/><rect x="540" y="700" width="200" height="55" rx="6" fill="rgba(136,19,55,0.15)" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="6,4"/>
+        <text x="640" y="720" fill="#fb7185" font-size="10" font-weight="600" text-anchor="middle">Siamese Web UI</text>
+        <text x="640" y="732" fill="#fb7185" font-size="7" text-anchor="middle">Streamlit · Local Only</text>
+        <text x="640" y="744" fill="#fb7185" font-size="6" text-anchor="middle">PoC — Manual 2-image comparison</text>
+
+        <!-- Recipient Actor -->
+        <rect x="70" y="710" width="90" height="45" rx="6" fill="#0f172a"/><rect x="70" y="710" width="90" height="45" rx="6" fill="rgba(30,41,59,0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="115" y="730" fill="white" font-size="10" font-weight="600" text-anchor="middle">Recipient</text>
+        <text x="115" y="742" fill="#94a3b8" font-size="7" text-anchor="middle">Actor</text>
+
+        <!-- ======================== LEGEND ======================== -->
+        <text x="30" y="810" fill="white" font-size="10" font-weight="700">Legend</text>
+
+        <rect x="30" y="822" width="16" height="10" rx="2" fill="rgba(8,51,68,0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="52" y="830" fill="#94a3b8" font-size="8">Edge / On-Device</text>
+
+        <rect x="170" y="822" width="16" height="10" rx="2" fill="rgba(6,78,59,0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="192" y="830" fill="#94a3b8" font-size="8">Processing / Web</text>
+
+        <rect x="310" y="822" width="16" height="10" rx="2" fill="rgba(120,53,15,0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="332" y="830" fill="#94a3b8" font-size="8">Cloud Service</text>
+
+        <rect x="440" y="822" width="16" height="10" rx="2" fill="rgba(76,29,149,0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="462" y="830" fill="#94a3b8" font-size="8">Database</text>
+
+        <rect x="540" y="822" width="16" height="10" rx="2" fill="rgba(136,19,55,0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="562" y="830" fill="#94a3b8" font-size="8">Gate / Security</text>
+
+        <!-- Line styles -->
+        <line x1="30" y1="852" x2="55" y2="852" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="62" y="855" fill="#94a3b8" font-size="8">Solid = Implemented</text>
+
+        <line x1="220" y1="852" x2="245" y2="852" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="6,4"/>
+        <text x="252" y="855" fill="#94a3b8" font-size="8">Dashed = PoC (not integrated)</text>
+
+        <line x1="460" y1="852" x2="485" y2="852" stroke="#475569" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="492" y="855" fill="#94a3b8" font-size="8">Dotted/Gray = Dormant</text>
+
+        <!-- Annotations -->
+        <text x="30" y="880" fill="#475569" font-size="7">* On-device AI: Building detection runs as VisionCamera frame processor — zero network dependency</text>
+        <text x="30" y="892" fill="#475569" font-size="7">* EXIF forensics: GPS lat/lon/alt + UTC timestamps embedded in JPEG before upload — image is self-contained evidence</text>
+        <text x="30" y="904" fill="#475569" font-size="7">* Data integrity: SHA-256 hash computed client-side, stored in DB for post-upload tamper verification</text>
+      </svg>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot cyan"></div>
+          <h3>PS1: Unstructured POD Images</h3>
+        </div>
+        <ul>
+          <li>• Dual-layer HUD enforces building + parcel in frame</li>
+          <li>• TFLite building classifier (≥80% confidence gate)</li>
+          <li>• Code-128 barcode scanner with 4-frame stability lock</li>
+          <li>• Capture button disabled until all conditions met</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>PS2: Limited Data Integrity</h3>
+        </div>
+        <ul>
+          <li>• EXIF GPS coordinates burned into JPEG on-device</li>
+          <li>• UTC timestamps (DateTimeOriginal, GPSDateStamp)</li>
+          <li>• SHA-256 image hash for tamper detection</li>
+          <li>• Image becomes self-contained forensic artifact</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>PS3: Cross-Temporal Verification</h3>
+        </div>
+        <ul>
+          <li>• Siamese Network compares buildings across deliveries</li>
+          <li>• Returns Match / Mismatch verdict to driver</li>
+          <li>• PoC validated independently with controlled tests</li>
+          <li>• Full pipeline integration planned (not yet in scope)</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer">Streamline POD Verification System · UTAR CS Final Year Project · React Native + Supabase + Vercel + TFLite + Siamese Network</p>
+  </div>
+</body>
+</html>

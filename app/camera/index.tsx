@@ -225,7 +225,7 @@ export default function CameraScreen() {
                         ? Date.now() - barcodeDetectedAtRef.current
                         : null,
                     exifWriteMs,
-                    batteryLevel: await Battery.getBatteryLevelAsync(),
+                    batteryLevel: Math.round((await Battery.getBatteryLevelAsync()) * 100),
                 };
 
                 sendToFieldTestAPI(fieldPayload).catch((e) => {
