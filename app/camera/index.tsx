@@ -28,6 +28,7 @@ import { CapturePayload, sendToAPI } from '@/utils/api';
 import { buildExifFromCoordinate } from '@/utils/exif-builder';
 import { burnExifOnly, saveToGalleryOnly } from '@/utils/exif-processor';
 import { FieldTestPayload, sendToFieldTestAPI } from '@/utils/field-test-api';
+import { dispatchBackgroundUpload } from '@/utils/upload-service';
 
 export default function CameraScreen() {
     const router = useRouter();
@@ -228,9 +229,7 @@ export default function CameraScreen() {
                     batteryLevel: await Battery.getBatteryLevelAsync(),
                 };
 
-                sendToFieldTestAPI(fieldPayload).catch((e) => {
-                    console.warn('[FieldTest] Background upload failed:', e);
-                });
+                dispatchBackgroundUpload('field-test', () => sendToFieldTestAPI(fieldPayload));
 
                 await Share.share({
                     message: [
@@ -259,6 +258,8 @@ export default function CameraScreen() {
                     trackingNumber: trackingNumber!,
                 };
 
+                dispatchBackgroundUpload('delivery', () => sendToAPI(payload));
+
                 Alert.alert('Success', 'Photo captured, EXIF written, and saved to gallery!');
 
                 await Share.share({
@@ -271,10 +272,6 @@ export default function CameraScreen() {
                         `View Proof of Delivery:`,
                         `https://streamline-pod-landing-page.vercel.app/delivery?id=${trackingNumber}`,
                     ].join('\n'),
-                });
-
-                sendToAPI(payload).catch((e) => {
-                    console.warn('Background upload failed:', e);
                 });
             }
         } catch (error) {
