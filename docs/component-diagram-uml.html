@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Component Diagrams — Streamline POD Verification System</title>
+<style>
+  body {
+    margin: 0;
+    padding: 40px;
+    background: #fff;
+    font-family: 'Times New Roman', Times, serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 48px;
+  }
+  svg {
+    max-width: 580px;
+    width: 100%;
+    height: auto;
+  }
+  svg text {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 11px;
+    fill: #000;
+  }
+  .label { font-size: 9px; font-style: italic; }
+  .title { font-size: 13px; font-weight: bold; }
+  .caption { font-size: 10px; }
+  .stereo { font-size: 9px; }
+  hr.sep { width: 580px; border: none; border-top: 1px solid #ccc; margin: 0; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FIGURE 1: Top-Level System Overview
+     ═══════════════════════════════════════════════════════════════ -->
+<svg viewBox="0 0 520 310" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="dep" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="none" stroke="#000" stroke-width="0.8"/>
+    </marker>
+    <symbol id="ci" viewBox="0 0 18 14">
+      <rect x="3" y="0" width="15" height="14" rx="1" fill="none" stroke="#000" stroke-width="1"/>
+      <rect x="0" y="2.5" width="7" height="3.5" rx="0.5" fill="none" stroke="#000" stroke-width="0.8"/>
+      <rect x="0" y="8" width="7" height="3.5" rx="0.5" fill="none" stroke="#000" stroke-width="0.8"/>
+    </symbol>
+  </defs>
+
+  <text x="260" y="16" text-anchor="middle" class="title">Figure 4.X(a): Top-Level Component Overview</text>
+
+  <!-- CameraScreen (central orchestrator) -->
+  <rect x="175" y="30" width="170" height="42" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <use href="#ci" x="178" y="33" width="14" height="11"/>
+  <text x="260" y="50" font-weight="bold" text-anchor="middle">CameraScreen</text>
+  <text x="260" y="62" text-anchor="middle" class="stereo">«component» orchestrator</text>
+
+  <!-- Left socket: CameraServices -->
+  <line x1="175" y1="51" x2="148" y2="51" stroke="#000" stroke-width="1"/>
+  <path d="M 148 42 A 9 9 0 0 0 148 60" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="139" y="48" text-anchor="end" class="label">CameraServices</text>
+
+  <!-- Bottom-left socket: DeliveryUpload -->
+  <line x1="220" y1="72" x2="220" y2="92" stroke="#000" stroke-width="1"/>
+  <path d="M 211 92 A 9 9 0 0 0 229 92" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="220" y="106" text-anchor="middle" class="label">DeliveryUpload</text>
+
+  <!-- Bottom-right socket: MetadataProcessing -->
+  <line x1="300" y1="72" x2="300" y2="92" stroke="#000" stroke-width="1"/>
+  <path d="M 291 92 A 9 9 0 0 0 309 92" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="300" y="106" text-anchor="middle" class="label">MetadataProcessing</text>
+
+  <!-- features/camera package -->
+  <rect x="40" y="120" width="175" height="42" fill="#fff" stroke="#000" stroke-width="1.2"/>
+  <use href="#ci" x="43" y="123" width="14" height="11"/>
+  <text x="127" y="140" font-weight="bold" text-anchor="middle">features/camera</text>
+  <text x="127" y="152" text-anchor="middle" class="stereo">«subsystem»</text>
+  <!-- Provided: CameraServices lollipop right -->
+  <line x1="215" y1="141" x2="233" y2="141" stroke="#000" stroke-width="1"/>
+  <circle cx="236" cy="141" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <!-- Assembly connector: route left-and-up to CameraScreen socket, avoiding other connectors -->
+  <path d="M 236 141 L 236 170 L 35 170 L 35 51 L 148 51" fill="none" stroke="#000" stroke-width="0.8" stroke-dasharray="4,3"/>
+
+  <!-- utils/ package -->
+  <rect x="145" y="180" width="230" height="42" fill="#fff" stroke="#000" stroke-width="1.2"/>
+  <use href="#ci" x="148" y="183" width="14" height="11"/>
+  <text x="260" y="200" font-weight="bold" text-anchor="middle">utils</text>
+  <text x="260" y="212" text-anchor="middle" class="stereo">«subsystem» Upload + EXIF Services</text>
+  <!-- Provided: DeliveryUpload lollipop up-left -->
+  <line x1="220" y1="180" x2="220" y2="162" stroke="#000" stroke-width="1"/>
+  <circle cx="220" cy="159" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <path d="M 220 155 L 220 100" fill="none" stroke="#000" stroke-width="0.8" stroke-dasharray="4,3"/>
+  <!-- Provided: MetadataProcessing lollipop up-right -->
+  <line x1="300" y1="180" x2="300" y2="162" stroke="#000" stroke-width="1"/>
+  <circle cx="300" cy="159" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <path d="M 300 155 L 300 100" fill="none" stroke="#000" stroke-width="0.8" stroke-dasharray="4,3"/>
+
+  <!-- Required socket down: CloudStorage -->
+  <line x1="260" y1="222" x2="260" y2="242" stroke="#000" stroke-width="1"/>
+  <path d="M 251 242 A 9 9 0 0 0 269 242" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="260" y="256" text-anchor="middle" class="label">CloudStorage</text>
+
+  <!-- Supabase Backend -->
+  <rect x="155" y="260" width="210" height="36" fill="#fff" stroke="#000" stroke-width="1.2"/>
+  <use href="#ci" x="158" y="263" width="14" height="11"/>
+  <text x="260" y="278" font-weight="bold" text-anchor="middle">Supabase Backend</text>
+  <text x="260" y="289" text-anchor="middle" class="stereo">«external» Storage + PostgreSQL</text>
+  <!-- Provided: CloudStorage lollipop up -->
+  <line x1="260" y1="260" x2="260" y2="252" stroke="#000" stroke-width="1"/>
+  <circle cx="260" cy="249" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+
+  <!-- Caption -->
+  <text x="260" y="308" text-anchor="middle" class="caption">Top-level subsystems and their assembly connectors.</text>
+</svg>
+
+<hr class="sep"/>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FIGURE 2: Camera Subsystem
+     ═══════════════════════════════════════════════════════════════ -->
+<svg viewBox="0 0 540 420" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="dep2" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="none" stroke="#000" stroke-width="0.8"/>
+    </marker>
+    <symbol id="ci2" viewBox="0 0 18 14">
+      <rect x="3" y="0" width="15" height="14" rx="1" fill="none" stroke="#000" stroke-width="1"/>
+      <rect x="0" y="2.5" width="7" height="3.5" rx="0.5" fill="none" stroke="#000" stroke-width="0.8"/>
+      <rect x="0" y="8" width="7" height="3.5" rx="0.5" fill="none" stroke="#000" stroke-width="0.8"/>
+    </symbol>
+  </defs>
+
+  <text x="270" y="16" text-anchor="middle" class="title">Figure 4.X(b): Camera Subsystem</text>
+
+  <!-- Provided interface labels ABOVE the package boundary -->
+  <text x="82" y="33" text-anchor="middle" font-size="8">BarcodeScanning</text>
+  <text x="247" y="33" text-anchor="middle" font-size="8">PhotoCapture</text>
+  <text x="437" y="33" text-anchor="middle" font-size="8">CameraUI</text>
+
+  <!-- Lollipop circles above package -->
+  <circle cx="82" cy="40" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <line x1="82" y1="44" x2="82" y2="57" stroke="#000" stroke-width="1"/>
+  <circle cx="247" cy="40" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <line x1="247" y1="44" x2="247" y2="57" stroke="#000" stroke-width="1"/>
+  <circle cx="437" cy="40" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <line x1="437" y1="44" x2="437" y2="57" stroke="#000" stroke-width="1"/>
+
+  <!-- Package boundary -->
+  <rect x="20" y="48" width="100" height="14" fill="#fff" stroke="#000" stroke-width="0.8"/>
+  <text x="24" y="59" font-size="9" font-weight="bold">features/camera</text>
+  <rect x="20" y="61" width="505" height="280" fill="none" stroke="#000" stroke-width="1"/>
+
+  <!-- ── Row 1 ── -->
+
+  <!-- useBarcodeScanner -->
+  <rect x="32" y="74" width="155" height="40" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci2" x="35" y="76" width="12" height="10"/>
+  <text x="109" y="90" font-weight="bold" text-anchor="middle">useBarcodeScanner</text>
+  <text x="109" y="102" text-anchor="middle" class="stereo">Code-128 · debounce</text>
+  <!-- Lollipop stem connects to circle above -->
+  <line x1="82" y1="57" x2="82" y2="74" stroke="#000" stroke-width="1"/>
+
+  <!-- useCameraCapture -->
+  <rect x="200" y="74" width="155" height="40" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci2" x="203" y="76" width="12" height="10"/>
+  <text x="277" y="90" font-weight="bold" text-anchor="middle">useCameraCapture</text>
+  <text x="277" y="102" text-anchor="middle" class="stereo">Photo + GPS snapshot</text>
+  <line x1="247" y1="57" x2="247" y2="74" stroke="#000" stroke-width="1"/>
+  <!-- Required: CameraPermission socket down -->
+  <line x1="277" y1="114" x2="277" y2="132" stroke="#000" stroke-width="1"/>
+  <path d="M 268 132 A 9 9 0 0 0 286 132" fill="none" stroke="#000" stroke-width="1"/>
+
+  <!-- Components sub-package -->
+  <rect x="375" y="68" width="140" height="112" fill="none" stroke="#000" stroke-width="0.8"/>
+  <text x="380" y="80" font-size="9" font-weight="bold">components/</text>
+  <rect x="385" y="86" width="120" height="28" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci2" x="388" y="88" width="12" height="10"/>
+  <text x="445" y="103" font-weight="bold" text-anchor="middle">CameraView</text>
+  <rect x="385" y="124" width="120" height="28" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci2" x="388" y="126" width="12" height="10"/>
+  <text x="445" y="141" font-weight="bold" text-anchor="middle">BarcodeViewfinder</text>
+  <line x1="437" y1="57" x2="437" y2="68" stroke="#000" stroke-width="1"/>
+
+  <!-- ── Row 2 ── -->
+
+  <!-- useLocationWatcher -->
+  <rect x="32" y="132" width="155" height="40" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci2" x="35" y="134" width="12" height="10"/>
+  <text x="109" y="148" font-weight="bold" text-anchor="middle">useLocationWatcher</text>
+  <text x="109" y="160" text-anchor="middle" class="stereo">BestForNavigation GPS</text>
+  <!-- Provided: LocationTracking lollipop up -->
+  <line x1="60" y1="132" x2="60" y2="122" stroke="#000" stroke-width="1"/>
+  <circle cx="60" cy="119" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="60" y="112" text-anchor="middle" font-size="8">LocationTracking</text>
+
+  <!-- useCameraPermissions -->
+  <rect x="215" y="142" width="155" height="35" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci2" x="218" y="144" width="12" height="10"/>
+  <text x="292" y="159" font-weight="bold" text-anchor="middle">useCameraPermissions</text>
+  <text x="292" y="170" text-anchor="middle" class="stereo">Permission management</text>
+  <!-- Provided: CameraPermission lollipop up -->
+  <line x1="277" y1="142" x2="277" y2="139" stroke="#000" stroke-width="1"/>
+  <circle cx="277" cy="136" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+
+  <!-- ── Row 3 ── -->
+
+  <!-- useBuildingDetector -->
+  <rect x="32" y="192" width="155" height="45" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci2" x="35" y="194" width="12" height="10"/>
+  <text x="109" y="208" font-weight="bold" text-anchor="middle">useBuildingDetector</text>
+  <text x="109" y="220" text-anchor="middle" class="stereo">TFLite · frameProcessor</text>
+  <text x="109" y="230" text-anchor="middle" class="stereo">confidence ≥ 0.80</text>
+  <!-- Provided: BuildingDetection lollipop up -->
+  <line x1="60" y1="192" x2="60" y2="182" stroke="#000" stroke-width="1"/>
+  <circle cx="60" cy="179" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="60" y="172" text-anchor="middle" font-size="8">BuildingDetection</text>
+  <!-- Required socket down: model artifact -->
+  <line x1="109" y1="237" x2="109" y2="254" stroke="#000" stroke-width="1"/>
+  <path d="M 100 254 A 9 9 0 0 0 118 254" fill="none" stroke="#000" stroke-width="1"/>
+
+  <!-- Model artifact -->
+  <rect x="54" y="265" width="110" height="26" fill="#fff" stroke="#000" stroke-width="0.8" stroke-dasharray="4,2"/>
+  <text x="109" y="278" text-anchor="middle" class="stereo">«artifact»</text>
+  <text x="109" y="287" text-anchor="middle" font-size="9">model.tflite</text>
+  <line x1="109" y1="265" x2="109" y2="262" stroke="#000" stroke-width="1"/>
+  <circle cx="109" cy="259" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+
+  <!-- useAccuracySignal -->
+  <rect x="215" y="198" width="155" height="35" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci2" x="218" y="200" width="12" height="10"/>
+  <text x="292" y="215" font-weight="bold" text-anchor="middle">useAccuracySignal</text>
+  <text x="292" y="226" text-anchor="middle" class="stereo">GPS → traffic-light</text>
+  <!-- Provided: AccuracySignal lollipop right -->
+  <line x1="370" y1="215" x2="383" y2="215" stroke="#000" stroke-width="1"/>
+  <circle cx="386" cy="215" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="396" y="213" font-size="8">AccuracySignal</text>
+
+  <!-- External dependencies note -->
+  <rect x="365" y="250" width="155" height="70" fill="#fff" stroke="#000" stroke-width="0.6"/>
+  <text x="370" y="263" font-size="9" font-weight="bold">«external» Native Modules</text>
+  <text x="370" y="276" font-size="9">• react-native-vision-camera</text>
+  <text x="370" y="288" font-size="9">• react-native-fast-tflite</text>
+  <text x="370" y="300" font-size="9">• expo-location</text>
+  <text x="370" y="312" font-size="9">• react-native-reanimated</text>
+
+  <!-- Caption -->
+  <text x="270" y="360" text-anchor="middle" class="caption">Camera subsystem: hooks provide interfaces consumed by CameraScreen.</text>
+  <text x="270" y="374" text-anchor="middle" class="caption">Assembly connectors join each provided lollipop to the orchestrator's required sockets.</text>
+
+  <!-- Legend -->
+  <line x1="30" y1="396" x2="50" y2="396" stroke="#000" stroke-width="1"/>
+  <circle cx="53" cy="396" r="3.5" fill="#fff" stroke="#000" stroke-width="0.8"/>
+  <text x="62" y="399" font-size="8">Provided</text>
+  <line x1="115" y1="396" x2="135" y2="396" stroke="#000" stroke-width="1"/>
+  <path d="M 135 389 A 7 7 0 0 1 135 403" fill="none" stroke="#000" stroke-width="0.8"/>
+  <text x="145" y="399" font-size="8">Required</text>
+  <rect x="205" y="390" width="28" height="12" fill="#fff" stroke="#000" stroke-width="0.8"/>
+  <use href="#ci2" x="207" y="391" width="9" height="7"/>
+  <text x="238" y="399" font-size="8">Component</text>
+  <rect x="305" y="390" width="28" height="12" fill="#fff" stroke="#000" stroke-width="0.6" stroke-dasharray="3,2"/>
+  <text x="338" y="399" font-size="8">Artifact</text>
+</svg>
+
+<hr class="sep"/>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FIGURE 3: Data Processing & Upload Subsystem
+     ═══════════════════════════════════════════════════════════════ -->
+<svg viewBox="0 0 520 350" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="dep3" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="none" stroke="#000" stroke-width="0.8"/>
+    </marker>
+    <symbol id="ci3" viewBox="0 0 18 14">
+      <rect x="3" y="0" width="15" height="14" rx="1" fill="none" stroke="#000" stroke-width="1"/>
+      <rect x="0" y="2.5" width="7" height="3.5" rx="0.5" fill="none" stroke="#000" stroke-width="0.8"/>
+      <rect x="0" y="8" width="7" height="3.5" rx="0.5" fill="none" stroke="#000" stroke-width="0.8"/>
+    </symbol>
+  </defs>
+
+  <text x="260" y="16" text-anchor="middle" class="title">Figure 4.X(c): Data Processing Subsystem</text>
+
+  <!-- Package boundary -->
+  <rect x="10" y="24" width="50" height="14" fill="#fff" stroke="#000" stroke-width="0.8"/>
+  <text x="14" y="35" font-size="9" font-weight="bold">utils/</text>
+  <rect x="10" y="37" width="500" height="185" fill="none" stroke="#000" stroke-width="1"/>
+
+  <!-- api.ts -->
+  <rect x="25" y="52" width="195" height="42" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci3" x="28" y="54" width="12" height="10"/>
+  <text x="122" y="68" font-weight="bold" text-anchor="middle">api.ts</text>
+  <text x="122" y="80" text-anchor="middle" class="stereo">sendToAPI()</text>
+  <text x="122" y="88" text-anchor="middle" font-size="8">Upload + INSERT delivery_records</text>
+  <!-- Provided: DeliveryUpload lollipop up -->
+  <line x1="122" y1="52" x2="122" y2="38" stroke="#000" stroke-width="1"/>
+  <circle cx="122" cy="35" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="122" y="28" text-anchor="middle" font-size="8">DeliveryUpload</text>
+
+  <!-- Required: CloudStorage socket down -->
+  <line x1="85" y1="94" x2="85" y2="112" stroke="#000" stroke-width="1"/>
+  <path d="M 76 112 A 9 9 0 0 0 94 112" fill="none" stroke="#000" stroke-width="1"/>
+  <!-- Required: ImageHashing socket down -->
+  <line x1="160" y1="94" x2="160" y2="112" stroke="#000" stroke-width="1"/>
+  <path d="M 151 112 A 9 9 0 0 0 169 112" fill="none" stroke="#000" stroke-width="1"/>
+
+  <!-- supabase_client.ts -->
+  <rect x="25" y="128" width="195" height="35" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci3" x="28" y="130" width="12" height="10"/>
+  <text x="122" y="145" font-weight="bold" text-anchor="middle">supabase_client.ts</text>
+  <text x="122" y="156" text-anchor="middle" class="stereo">Supabase singleton · AsyncStorage</text>
+  <!-- Provided: CloudStorage lollipop up -->
+  <line x1="85" y1="128" x2="85" y2="120" stroke="#000" stroke-width="1"/>
+  <circle cx="85" cy="117" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="65" y="117" text-anchor="end" font-size="7">CloudStorage</text>
+
+  <!-- hasher.ts -->
+  <rect x="235" y="52" width="155" height="42" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci3" x="238" y="54" width="12" height="10"/>
+  <text x="312" y="68" font-weight="bold" text-anchor="middle">hasher.ts</text>
+  <text x="312" y="80" text-anchor="middle" class="stereo">SHA-256 fingerprint</text>
+  <text x="312" y="88" text-anchor="middle" font-size="8">Tamper detection</text>
+  <!-- Provided: ImageHashing lollipop up -->
+  <line x1="312" y1="52" x2="312" y2="38" stroke="#000" stroke-width="1"/>
+  <circle cx="312" cy="35" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="312" y="28" text-anchor="middle" font-size="8">ImageHashing</text>
+
+  <!-- exif-builder.ts -->
+  <rect x="25" y="178" width="195" height="35" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci3" x="28" y="180" width="12" height="10"/>
+  <text x="122" y="196" font-weight="bold" text-anchor="middle">exif-builder.ts</text>
+  <text x="122" y="207" text-anchor="middle" class="stereo">GPS → EXIF metadata construction</text>
+  <!-- Provided: ExifConstruction lollipop right -->
+  <line x1="220" y1="195" x2="235" y2="195" stroke="#000" stroke-width="1"/>
+  <circle cx="238" cy="195" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="248" y="193" font-size="8">ExifConstruction</text>
+
+  <!-- exif-processor.ts -->
+  <rect x="280" y="128" width="215" height="40" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci3" x="283" y="130" width="12" height="10"/>
+  <text x="387" y="146" font-weight="bold" text-anchor="middle">exif-processor.ts</text>
+  <text x="387" y="158" text-anchor="middle" class="stereo">burnExifOnly · saveToGalleryOnly</text>
+  <!-- Provided: ExifEmbedding lollipop up -->
+  <line x1="387" y1="128" x2="387" y2="115" stroke="#000" stroke-width="1"/>
+  <circle cx="387" cy="112" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="387" y="105" text-anchor="middle" font-size="8">ExifEmbedding</text>
+  <!-- Required: native exify socket left -->
+  <line x1="280" y1="148" x2="268" y2="148" stroke="#000" stroke-width="1"/>
+  <path d="M 268 140 A 8 8 0 0 0 268 156" fill="none" stroke="#000" stroke-width="0.8"/>
+  <text x="254" y="146" text-anchor="end" font-size="7" class="label">exify</text>
+
+  <!-- External: Supabase Backend -->
+  <rect x="15" y="235" width="60" height="14" fill="#fff" stroke="#000" stroke-width="0.8"/>
+  <text x="19" y="246" font-size="8" font-weight="bold">«external»</text>
+  <rect x="15" y="248" width="490" height="50" fill="none" stroke="#000" stroke-width="1"/>
+
+  <rect x="25" y="258" width="140" height="28" fill="#fff" stroke="#000" stroke-width="0.8"/>
+  <text x="95" y="273" font-weight="bold" text-anchor="middle" font-size="10">Supabase Storage</text>
+  <text x="95" y="282" text-anchor="middle" font-size="8">delivery-proofs bucket</text>
+
+  <rect x="175" y="258" width="145" height="28" fill="#fff" stroke="#000" stroke-width="0.8"/>
+  <text x="247" y="273" font-weight="bold" text-anchor="middle" font-size="10">PostgreSQL</text>
+  <text x="247" y="282" text-anchor="middle" font-size="8">delivery_records table</text>
+
+  <rect x="330" y="258" width="115" height="28" fill="#fff" stroke="#000" stroke-width="0.6" stroke-dasharray="4,2"/>
+  <text x="387" y="270" text-anchor="middle" font-size="9">Edge Function</text>
+  <text x="387" y="280" text-anchor="middle" font-size="8" fill="#888">notify-delivery</text>
+
+  <rect x="455" y="258" width="42" height="28" fill="#fff" stroke="#000" stroke-width="0.6" stroke-dasharray="4,2"/>
+  <text x="476" y="273" text-anchor="middle" font-size="8">Twilio</text>
+  <text x="476" y="282" text-anchor="middle" font-size="7" fill="#888">dormant</text>
+
+  <line x1="445" y1="272" x2="455" y2="272" stroke="#000" stroke-width="0.6" stroke-dasharray="3,2"/>
+
+  <!-- Dependency: supabase_client → backend (routed left to avoid exif-builder) -->
+  <path d="M 85 163 L 85 172 L 18 172 L 18 248" fill="none" stroke="#000" stroke-width="0.8" stroke-dasharray="5,3" marker-end="url(#dep3)"/>
+  <text x="24" y="220" class="label">«use»</text>
+
+  <!-- Caption -->
+  <text x="260" y="318" text-anchor="middle" class="caption">Data processing subsystem: API service, EXIF processing, hashing,</text>
+  <text x="260" y="332" text-anchor="middle" class="caption">and Supabase client with their provided and required interfaces.</text>
+</svg>
+
+<hr class="sep"/>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FIGURE 4: Shared Types
+     ═══════════════════════════════════════════════════════════════ -->
+<svg viewBox="0 0 520 170" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <symbol id="ci4" viewBox="0 0 18 14">
+      <rect x="3" y="0" width="15" height="14" rx="1" fill="none" stroke="#000" stroke-width="1"/>
+      <rect x="0" y="2.5" width="7" height="3.5" rx="0.5" fill="none" stroke="#000" stroke-width="0.8"/>
+      <rect x="0" y="8" width="7" height="3.5" rx="0.5" fill="none" stroke="#000" stroke-width="0.8"/>
+    </symbol>
+  </defs>
+
+  <text x="260" y="16" text-anchor="middle" class="title">Figure 4.X(d): Shared Type Definitions</text>
+
+  <!-- Package boundary -->
+  <rect x="60" y="24" width="50" height="14" fill="#fff" stroke="#000" stroke-width="0.8"/>
+  <text x="64" y="35" font-size="9" font-weight="bold">types/</text>
+  <rect x="60" y="37" width="400" height="85" fill="none" stroke="#000" stroke-width="1"/>
+
+  <!-- exif.types -->
+  <rect x="75" y="52" width="175" height="35" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci4" x="78" y="54" width="12" height="10"/>
+  <text x="162" y="68" font-weight="bold" text-anchor="middle">exif.types.ts</text>
+  <text x="162" y="80" text-anchor="middle" font-size="9">EXIFMetadata · EXIFProcessingResult</text>
+
+  <!-- location.types -->
+  <rect x="265" y="52" width="180" height="35" fill="#fff" stroke="#000" stroke-width="1"/>
+  <use href="#ci4" x="268" y="54" width="12" height="10"/>
+  <text x="355" y="68" font-weight="bold" text-anchor="middle">location.types.ts</text>
+  <text x="355" y="80" text-anchor="middle" font-size="9">LocationCoordinate · LocationWatcherState</text>
+
+  <!-- Provided: DomainTypes lollipop down -->
+  <line x1="260" y1="122" x2="260" y2="135" stroke="#000" stroke-width="1"/>
+  <circle cx="260" cy="138" r="4" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="260" y="152" text-anchor="middle" font-size="8">DomainTypes</text>
+
+  <!-- Note -->
+  <rect x="75" y="95" width="370" height="18" fill="#fff" stroke="none"/>
+  <text x="260" y="108" text-anchor="middle" font-size="9">Consumed by: CameraScreen, useBuildingDetector, api.ts, exif-builder.ts, exif-processor.ts</text>
+
+  <text x="260" y="168" text-anchor="middle" class="caption">Shared domain types consumed across all subsystems via DomainTypes interface.</text>
+</svg>
+
+</body>
+</html>

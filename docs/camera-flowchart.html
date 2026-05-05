@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Camera Screen Flowchart</title>
+<style>
+  body {
+    margin: 0;
+    padding: 40px;
+    background: #fff;
+    font-family: 'Times New Roman', Times, serif;
+    display: flex;
+    justify-content: center;
+  }
+  svg {
+    max-width: 720px;
+    width: 100%;
+    height: auto;
+  }
+  text {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 11px;
+    fill: #000;
+  }
+  .label {
+    font-size: 10px;
+    font-style: italic;
+  }
+  .title {
+    font-size: 13px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+<svg viewBox="0 0 550 720" xmlns="http://www.w3.org/2000/svg">
+  <!-- Title -->
+  <text x="260" y="18" text-anchor="middle" class="title">Figure X: Camera Screen Decision Flow</text>
+
+  <!-- 1. Screen Mounted (rounded rect) -->
+  <rect x="185" y="34" width="150" height="32" rx="16" fill="none" stroke="#000" stroke-width="1.5"/>
+  <text x="260" y="54" text-anchor="middle">Screen Mounted</text>
+
+  <!-- Arrow down -->
+  <line x1="260" y1="66" x2="260" y2="84" stroke="#000" stroke-width="1"/>
+  <polygon points="256,81 260,89 264,81" fill="#000"/>
+
+  <!-- 2. Permission granted? (diamond h=54) -->
+  <polygon points="260,86 330,113 260,140 190,113" fill="none" stroke="#000" stroke-width="1.5"/>
+  <text x="260" y="110" text-anchor="middle">Permission</text>
+  <text x="260" y="122" text-anchor="middle">granted?</text>
+
+  <!-- No branch (right) -->
+  <line x1="330" y1="113" x2="398" y2="113" stroke="#000" stroke-width="1"/>
+  <polygon points="395,109 403,113 395,117" fill="#000"/>
+  <rect x="405" y="100" width="120" height="26" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="465" y="117" text-anchor="middle">Request Permission</text>
+  <text x="364" y="107" text-anchor="middle" class="label">No</text>
+
+  <!-- Yes branch (down) -->
+  <line x1="260" y1="140" x2="260" y2="158" stroke="#000" stroke-width="1"/>
+  <polygon points="256,155 260,163 264,155" fill="#000"/>
+  <text x="270" y="153" class="label">Yes</text>
+
+  <!-- 3. Camera Active + Parallel Processes (dashed box) -->
+  <rect x="135" y="162" width="250" height="68" fill="none" stroke="#000" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="260" y="180" text-anchor="middle" font-weight="bold">Camera Active — Parallel Processes</text>
+  <text x="260" y="194" text-anchor="middle">• GPS Location Watcher</text>
+  <text x="260" y="206" text-anchor="middle">• Barcode Scanner (bottom half)</text>
+  <text x="260" y="218" text-anchor="middle">• 5s Force-Capture Timer</text>
+
+  <!-- Arrow down -->
+  <line x1="260" y1="230" x2="260" y2="248" stroke="#000" stroke-width="1"/>
+  <polygon points="256,245 260,253 264,245" fill="#000"/>
+
+  <!-- 4. Barcode scanned? (diamond h=54) -->
+  <polygon points="260,250 330,277 260,304 190,277" fill="none" stroke="#000" stroke-width="1.5"/>
+  <text x="260" y="274" text-anchor="middle">Barcode</text>
+  <text x="260" y="286" text-anchor="middle">scanned?</text>
+
+  <!-- No branch (right) — wider box to fit text -->
+  <line x1="330" y1="277" x2="398" y2="277" stroke="#000" stroke-width="1"/>
+  <polygon points="395,273 403,277 395,281" fill="#000"/>
+  <rect x="405" y="263" width="120" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="465" y="275" text-anchor="middle">Wait for scan</text>
+  <text x="465" y="287" text-anchor="middle" class="label">(Button disabled)</text>
+  <text x="364" y="270" text-anchor="middle" class="label">No</text>
+
+  <!-- Loop-back arrow: Wait for scan → Camera Active -->
+  <line x1="525" y1="277" x2="540" y2="277" stroke="#000" stroke-width="1"/>
+  <line x1="540" y1="277" x2="540" y2="196" stroke="#000" stroke-width="1"/>
+  <line x1="540" y1="196" x2="389" y2="196" stroke="#000" stroke-width="1"/>
+  <polygon points="392,192 384,196 392,200" fill="#000"/>
+
+  <!-- Yes branch (down) -->
+  <line x1="260" y1="304" x2="260" y2="322" stroke="#000" stroke-width="1"/>
+  <polygon points="256,319 260,327 264,319" fill="#000"/>
+  <text x="270" y="316" class="label">Yes</text>
+
+  <!-- 5. Activate Building Detection -->
+  <rect x="170" y="324" width="180" height="28" fill="none" stroke="#000" stroke-width="1.5"/>
+  <text x="260" y="342" text-anchor="middle">Activate Building Detection</text>
+
+  <!-- Arrow down -->
+  <line x1="260" y1="352" x2="260" y2="370" stroke="#000" stroke-width="1"/>
+  <polygon points="256,367 260,375 264,367" fill="#000"/>
+
+  <!-- 6a. GPS precise OR timer elapsed? (diamond h=54) -->
+  <polygon points="260,372 340,401 260,430 180,401" fill="none" stroke="#000" stroke-width="1.5"/>
+  <text x="260" y="398" text-anchor="middle">GPS precise OR</text>
+  <text x="260" y="410" text-anchor="middle">timer elapsed?</text>
+
+  <!-- No branch (right) -->
+  <line x1="340" y1="401" x2="398" y2="401" stroke="#000" stroke-width="1"/>
+  <polygon points="395,397 403,401 395,405" fill="#000"/>
+  <rect x="405" y="388" width="120" height="26" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="465" y="405" text-anchor="middle">Waiting for GPS</text>
+  <text x="369" y="394" text-anchor="middle" class="label">No</text>
+
+  <!-- Yes branch (down) -->
+  <line x1="260" y1="430" x2="260" y2="448" stroke="#000" stroke-width="1"/>
+  <polygon points="256,445 260,453 264,445" fill="#000"/>
+  <text x="270" y="443" class="label">Yes</text>
+
+  <!-- 6b. Building detected? (diamond h=54) -->
+  <polygon points="260,450 340,479 260,508 180,479" fill="none" stroke="#000" stroke-width="1.5"/>
+  <text x="260" y="476" text-anchor="middle">Building</text>
+  <text x="260" y="488" text-anchor="middle">detected?</text>
+
+  <!-- No branch (right) -->
+  <line x1="340" y1="479" x2="398" y2="479" stroke="#000" stroke-width="1"/>
+  <polygon points="395,475 403,479 395,483" fill="#000"/>
+  <rect x="405" y="466" width="120" height="26" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="465" y="483" text-anchor="middle">Waiting for model</text>
+  <text x="369" y="472" text-anchor="middle" class="label">No</text>
+
+  <!-- Yes branch (down) -->
+  <line x1="260" y1="508" x2="260" y2="526" stroke="#000" stroke-width="1"/>
+  <polygon points="256,523 260,531 264,523" fill="#000"/>
+  <text x="270" y="521" class="label">Yes</text>
+
+  <!-- 7. Capture Photo + EXIF -->
+  <rect x="170" y="528" width="180" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+  <text x="260" y="544" text-anchor="middle">Capture Photo</text>
+  <text x="260" y="556" text-anchor="middle">Build &amp; Burn EXIF</text>
+  <text x="260" y="568" text-anchor="middle">Save to Gallery</text>
+
+  <!-- Arrow down -->
+  <line x1="260" y1="574" x2="260" y2="592" stroke="#000" stroke-width="1"/>
+  <polygon points="256,589 260,597 264,589" fill="#000"/>
+
+  <!-- 8. Post-capture actions -->
+  <rect x="170" y="594" width="180" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+  <text x="260" y="610" text-anchor="middle">Success Alert</text>
+  <text x="260" y="622" text-anchor="middle">Share Delivery Link</text>
+  <text x="260" y="634" text-anchor="middle">API Upload (background)</text>
+
+  <!-- Arrow down -->
+  <line x1="260" y1="640" x2="260" y2="658" stroke="#000" stroke-width="1"/>
+  <polygon points="256,655 260,663 264,655" fill="#000"/>
+
+  <!-- End -->
+  <rect x="215" y="665" width="90" height="26" rx="13" fill="none" stroke="#000" stroke-width="1.5"/>
+  <text x="260" y="682" text-anchor="middle">End</text>
+
+  <!-- Legend note -->
+  <rect x="10" y="704" width="8" height="8" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="24" y="712" class="label">= parallel / concurrent</text>
+</svg>
+</body>
+</html>

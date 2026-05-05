@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>System Block Diagram</title>
+<style>
+  body{margin:0;padding:20px;background:#fff;font-family:'Times New Roman',Times,serif;display:flex;justify-content:center}
+  svg{max-width:900px;width:100%;height:auto}
+  text{font-family:'Times New Roman',Times,serif;font-size:10px;fill:#000}
+  .title{font-size:13px;font-weight:bold}
+  .pkg{font-size:9px;font-weight:bold}
+  .sub{font-size:8.5px;font-style:italic}
+  .lbl{font-size:8px;font-style:italic}
+</style>
+</head>
+<body>
+<svg viewBox="0 0 880 540" xmlns="http://www.w3.org/2000/svg">
+
+  <text x="440" y="16" text-anchor="middle" class="title">Figure X: System Block Diagram</text>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!--  COLUMN 1 — «input source»  x=14..148                      -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <rect x="14" y="30" width="134" height="284" fill="none" stroke="#000" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="81" y="44" text-anchor="middle" class="pkg">&#171;input source&#187;</text>
+
+  <rect x="24" y="58" width="114" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="81" y="71" text-anchor="middle">Camera Hardware</text>
+  <text x="81" y="80" text-anchor="middle" class="sub">VisionCamera</text>
+
+  <rect x="24" y="118" width="114" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="81" y="131" text-anchor="middle">GPS Sensor</text>
+  <text x="81" y="140" text-anchor="middle" class="sub">expo-location</text>
+
+  <rect x="24" y="178" width="114" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="81" y="191" text-anchor="middle">Barcode Reader</text>
+  <text x="81" y="200" text-anchor="middle" class="sub">Code 128 scanner</text>
+
+  <rect x="24" y="238" width="114" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="81" y="251" text-anchor="middle">TFLite Model</text>
+  <text x="81" y="260" text-anchor="middle" class="sub">building classifier</text>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!--  COLUMN 2 — «user interface»  x=178..332                   -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <rect x="178" y="30" width="154" height="284" fill="none" stroke="#000" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="255" y="44" text-anchor="middle" class="pkg">&#171;user interface&#187;</text>
+
+  <rect x="188" y="54" width="134" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="255" y="67" text-anchor="middle">Home Screen</text>
+  <text x="255" y="76" text-anchor="middle" class="sub">app/index.tsx</text>
+
+  <rect x="188" y="96" width="134" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="255" y="109" text-anchor="middle">Camera Screen</text>
+  <text x="255" y="118" text-anchor="middle" class="sub">app/camera/index.tsx</text>
+
+  <rect x="188" y="138" width="134" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="255" y="151" text-anchor="middle">Accuracy Signal</text>
+  <text x="255" y="160" text-anchor="middle" class="sub">GPS quality gate</text>
+
+  <rect x="188" y="180" width="134" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="255" y="193" text-anchor="middle">Barcode Viewfinder</text>
+  <text x="255" y="202" text-anchor="middle" class="sub">scan overlay</text>
+
+  <rect x="188" y="222" width="134" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="255" y="235" text-anchor="middle">Capture Gate</text>
+  <text x="255" y="244" text-anchor="middle" class="sub">3-condition lock</text>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!--  COLUMN 3 — «data processing»  x=362..536                  -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <rect x="362" y="30" width="174" height="284" fill="none" stroke="#000" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="449" y="44" text-anchor="middle" class="pkg">&#171;data processing&#187;</text>
+
+  <rect x="374" y="54" width="150" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="449" y="67" text-anchor="middle">Location Watcher</text>
+  <text x="449" y="76" text-anchor="middle" class="sub">continuous GPS stream</text>
+
+  <rect x="374" y="96" width="150" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="449" y="109" text-anchor="middle">Building Detector</text>
+  <text x="449" y="118" text-anchor="middle" class="sub">frame processor</text>
+
+  <rect x="374" y="148" width="150" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="449" y="161" text-anchor="middle">EXIF Builder</text>
+  <text x="449" y="170" text-anchor="middle" class="sub">GPS &#8594; EXIF tags</text>
+
+  <rect x="374" y="190" width="150" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="449" y="203" text-anchor="middle">EXIF Writer</text>
+  <text x="449" y="212" text-anchor="middle" class="sub">burn into JPEG</text>
+
+  <rect x="374" y="232" width="150" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="449" y="245" text-anchor="middle">Image Hasher</text>
+  <text x="449" y="254" text-anchor="middle" class="sub">SHA-256</text>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!--  COLUMN 4 — «data transmission»  x=566..700                -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <rect x="566" y="30" width="134" height="284" fill="none" stroke="#000" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="633" y="44" text-anchor="middle" class="pkg">&#171;data transmission&#187;</text>
+
+  <rect x="576" y="60" width="114" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="633" y="73" text-anchor="middle">API Client</text>
+  <text x="633" y="82" text-anchor="middle" class="sub">utils/api.ts</text>
+
+  <rect x="576" y="112" width="114" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="633" y="125" text-anchor="middle">Gallery Saver</text>
+  <text x="633" y="134" text-anchor="middle" class="sub">expo-media-library</text>
+
+  <rect x="576" y="164" width="114" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="633" y="177" text-anchor="middle">Share Intent</text>
+  <text x="633" y="186" text-anchor="middle" class="sub">confirmation link</text>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!--  COLUMN 5 — «data storage / output»  x=730..866            -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <rect x="730" y="30" width="136" height="284" fill="none" stroke="#000" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="798" y="44" text-anchor="middle" class="pkg">&#171;storage / output&#187;</text>
+
+  <rect x="740" y="60" width="116" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="798" y="73" text-anchor="middle">Supabase Storage</text>
+  <text x="798" y="82" text-anchor="middle" class="sub">delivery-proofs</text>
+
+  <rect x="740" y="106" width="116" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="798" y="119" text-anchor="middle">Supabase PostgreSQL</text>
+  <text x="798" y="128" text-anchor="middle" class="sub">delivery_records</text>
+
+  <rect x="740" y="152" width="116" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="798" y="165" text-anchor="middle">Device Gallery</text>
+  <text x="798" y="174" text-anchor="middle" class="sub">EXIF-embedded JPEG</text>
+
+  <rect x="740" y="198" width="116" height="28" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="798" y="211" text-anchor="middle">Landing Page</text>
+  <text x="798" y="220" text-anchor="middle" class="sub">Vercel (customer)</text>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!--  ORTHOGONAL ARROWS — all 90° bends, spaced to avoid text   -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+
+  <!-- ── Col 1 → Col 2 ── -->
+  <!-- Camera Hardware → Camera Screen -->
+  <polyline points="138,72 158,72 158,110 188,110" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="185,107 191,110 185,113" fill="#000"/>
+
+  <!-- GPS Sensor → Accuracy Signal -->
+  <polyline points="138,132 164,132 164,152 188,152" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="185,149 191,152 185,155" fill="#000"/>
+
+  <!-- Barcode Reader → Barcode Viewfinder -->
+  <polyline points="138,192 170,192 170,194 188,194" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="185,191 191,194 185,197" fill="#000"/>
+
+  <!-- TFLite → Capture Gate -->
+  <polyline points="138,252 172,252 172,236 188,236" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="185,233 191,236 185,239" fill="#000"/>
+
+  <!-- Home → Camera (down inside col 2) -->
+  <polyline points="255,82 255,96" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="251,93 255,99 259,93" fill="#000"/>
+
+  <!-- ── Col 2 → Col 3 ── -->
+  <!-- Camera Screen → Location Watcher -->
+  <polyline points="322,104 348,104 348,68 374,68" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="371,65 377,68 371,71" fill="#000"/>
+
+  <!-- Camera Screen → Building Detector -->
+  <polyline points="322,116 348,116 348,110 374,110" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="371,107 377,110 371,113" fill="#000"/>
+
+  <!-- Accuracy Signal → EXIF Builder -->
+  <polyline points="322,152 348,152 348,162 374,162" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="371,159 377,162 371,165" fill="#000"/>
+
+  <!-- Capture Gate → EXIF Writer -->
+  <polyline points="322,236 352,236 352,204 374,204" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="371,201 377,204 371,207" fill="#000"/>
+
+  <!-- ── Within Col 3 (vertical chain) ── -->
+  <!-- EXIF Builder → EXIF Writer -->
+  <polyline points="449,176 449,190" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="445,187 449,193 453,187" fill="#000"/>
+
+  <!-- EXIF Writer → Image Hasher -->
+  <polyline points="449,218 449,232" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="445,229 449,235 453,229" fill="#000"/>
+
+  <!-- ── Col 3 → Col 4 ── -->
+  <!-- Image Hasher → API Client -->
+  <polyline points="524,246 550,246 550,74 576,74" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="573,71 579,74 573,77" fill="#000"/>
+
+  <!-- EXIF Writer → Gallery Saver -->
+  <polyline points="524,204 554,204 554,126 576,126" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="573,123 579,126 573,129" fill="#000"/>
+
+  <!-- Capture Gate (col2) → Share Intent (col4) — route below packages -->
+  <polyline points="255,250 255,286 633,286 633,192" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="629,195 633,189 637,195" fill="#000"/>
+
+  <!-- ── Col 4 → Col 5 ── -->
+  <!-- API Client → Supabase Storage -->
+  <polyline points="690,70 716,70 716,74 740,74" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="737,71 743,74 737,77" fill="#000"/>
+
+  <!-- API Client → Supabase PostgreSQL -->
+  <polyline points="690,80 720,80 720,120 740,120" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="737,117 743,120 737,123" fill="#000"/>
+
+  <!-- Gallery Saver → Device Gallery -->
+  <polyline points="690,126 716,126 716,166 740,166" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="737,163 743,166 737,169" fill="#000"/>
+
+  <!-- Share Intent → Landing Page -->
+  <polyline points="690,178 716,178 716,212 740,212" fill="none" stroke="#000" stroke-width="0.8"/>
+  <polygon points="737,209 743,212 737,215" fill="#000"/>
+
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <!--  LEGEND                                                      -->
+  <!-- ════════════════════════════════════════════════════════════ -->
+  <rect x="14" y="336" width="852" height="36" fill="none" stroke="#000" stroke-width="0.7"/>
+  <text x="24" y="350" class="pkg">Legend</text>
+
+  <rect x="24" y="356" width="24" height="10" fill="none" stroke="#000" stroke-width="0.8"/>
+  <text x="56" y="364">Module</text>
+
+  <rect x="120" y="356" width="24" height="10" fill="none" stroke="#000" stroke-width="0.8" stroke-dasharray="4,2"/>
+  <text x="152" y="364">Package</text>
+
+  <line x1="220" y1="361" x2="244" y2="361" stroke="#000" stroke-width="0.8"/>
+  <polygon points="241,358 247,361 241,364" fill="#000"/>
+  <text x="254" y="364">Data / control flow</text>
+
+  <text x="400" y="364" class="sub">All connectors are orthogonal (90&#176;) routed. Packages are arranged left-to-right by data flow stage.</text>
+
+</svg>
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Section 4.3.2 — Entity Relationship Diagram</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      background: #fff;
+      padding: 2rem;
+      color: #000;
+    }
+    .container { max-width: 1300px; margin: 0 auto; }
+    h1 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .subtitle { font-size: 0.85rem; color: #555; margin-bottom: 1.5rem; }
+    .diagram-wrap {
+      border: 1px solid #ccc;
+      padding: 1rem;
+      overflow-x: auto;
+      background: #fff;
+    }
+    svg { width: 100%; min-width: 1050px; display: block; }
+    .caption {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: #555;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Figure 4.x — Entity Relationship Diagram</h1>
+    <p class="subtitle">Proof-of-Delivery Verification System (Supabase PostgreSQL + Object Storage)</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 1100 880" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Standard UML arrow (association) -->
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#000"/>
+          </marker>
+          <!-- Open diamond (aggregation) -->
+          <marker id="diamond" markerWidth="12" markerHeight="8" refX="0" refY="4" orient="auto">
+            <polygon points="6 0, 12 4, 6 8, 0 4" fill="#fff" stroke="#000" stroke-width="1"/>
+          </marker>
+        </defs>
+
+        <!-- White background -->
+        <rect width="100%" height="100%" fill="#fff"/>
+
+
+        <!-- ================================================================
+             TABLE: delivery_records
+             ================================================================ -->
+        <rect x="40" y="40" width="470" height="310" rx="0" fill="#fff" stroke="#000" stroke-width="1.5"/>
+
+        <!-- Table name compartment (UML bold class name) -->
+        <rect x="40" y="40" width="470" height="30" fill="#fff" stroke="#000" stroke-width="1.5"/>
+        <text x="270" y="61" fill="#000" font-size="13" font-weight="700" text-anchor="middle" font-family="serif">delivery_records</text>
+
+        <!-- Stereotype -->
+        <text x="270" y="78" fill="#555" font-size="9" text-anchor="middle" font-family="serif" font-style="italic">&lt;&lt;table&gt;&gt;</text>
+
+        <!-- Separator line below stereotype -->
+        <line x1="40" y1="85" x2="510" y2="85" stroke="#000" stroke-width="1"/>
+
+        <!-- Column header -->
+        <text x="56" y="102" fill="#000" font-size="9" font-weight="700" font-family="monospace">Column</text>
+        <text x="250" y="102" fill="#000" font-size="9" font-weight="700" font-family="monospace">Type</text>
+        <text x="355" y="102" fill="#000" font-size="9" font-weight="700" font-family="monospace">Constraints</text>
+        <line x1="40" y1="108" x2="510" y2="108" stroke="#000" stroke-width="0.5"/>
+
+        <!-- PK icon + id -->
+        <text x="56" y="125" fill="#000" font-size="9" font-weight="700" font-family="monospace" text-decoration="underline">+ id</text>
+        <text x="250" y="125" fill="#000" font-size="9" font-family="monospace">uuid</text>
+        <text x="355" y="125" fill="#000" font-size="9" font-family="monospace">PK, gen_random_uuid()</text>
+
+        <text x="56" y="143" fill="#000" font-size="9" font-family="monospace">+ created_at</text>
+        <text x="250" y="143" fill="#000" font-size="9" font-family="monospace">timestamptz</text>
+        <text x="355" y="143" fill="#000" font-size="9" font-family="monospace">NOT NULL, DEFAULT now()</text>
+
+        <text x="56" y="161" fill="#000" font-size="9" font-family="monospace">+ tracking_number</text>
+        <text x="250" y="161" fill="#000" font-size="9" font-family="monospace">text</text>
+        <text x="355" y="161" fill="#000" font-size="9" font-family="monospace">NOT NULL</text>
+
+        <text x="56" y="179" fill="#000" font-size="9" font-family="monospace">+ image_url</text>
+        <text x="250" y="179" fill="#000" font-size="9" font-family="monospace">text</text>
+        <text x="355" y="179" fill="#000" font-size="9" font-family="monospace">NOT NULL</text>
+
+        <text x="56" y="197" fill="#000" font-size="9" font-family="monospace">+ image_hash</text>
+        <text x="250" y="197" fill="#000" font-size="9" font-family="monospace">text</text>
+        <text x="355" y="197" fill="#000" font-size="9" font-family="monospace">NOT NULL, SHA-256</text>
+
+        <text x="56" y="215" fill="#000" font-size="9" font-family="monospace">+ latitude</text>
+        <text x="250" y="215" fill="#000" font-size="9" font-family="monospace">float8</text>
+        <text x="355" y="215" fill="#000" font-size="9" font-family="monospace">NOT NULL</text>
+
+        <text x="56" y="233" fill="#000" font-size="9" font-family="monospace">+ longitude</text>
+        <text x="250" y="233" fill="#000" font-size="9" font-family="monospace">float8</text>
+        <text x="355" y="233" fill="#000" font-size="9" font-family="monospace">NOT NULL</text>
+
+        <text x="56" y="251" fill="#000" font-size="9" font-family="monospace">+ altitude</text>
+        <text x="250" y="251" fill="#000" font-size="9" font-family="monospace">float8</text>
+        <text x="355" y="251" fill="#000" font-size="9" font-family="monospace">NULLABLE</text>
+
+        <text x="56" y="269" fill="#000" font-size="9" font-family="monospace">+ gps_accuracy_metres</text>
+        <text x="250" y="269" fill="#000" font-size="9" font-family="monospace">float8</text>
+        <text x="355" y="269" fill="#000" font-size="9" font-family="monospace">NULLABLE</text>
+
+        <text x="56" y="287" fill="#000" font-size="9" font-family="monospace">+ captured_at</text>
+        <text x="250" y="287" fill="#000" font-size="9" font-family="monospace">timestamptz</text>
+        <text x="355" y="287" fill="#000" font-size="9" font-family="monospace">NOT NULL</text>
+
+        <text x="56" y="305" fill="#000" font-size="9" font-family="monospace">+ accuracy_status</text>
+        <text x="250" y="305" fill="#000" font-size="9" font-family="monospace">text</text>
+        <text x="355" y="305" fill="#000" font-size="9" font-family="monospace">CHECK IN (precise, override)</text>
+
+        <!-- Row count annotation -->
+        <text x="56" y="340" fill="#888" font-size="8" font-family="serif" font-style="italic">11 columns</text>
+
+
+        <!-- ================================================================
+             TABLE: field_test_records
+             ================================================================ -->
+        <rect x="40" y="420" width="420" height="440" rx="0" fill="#fff" stroke="#000" stroke-width="1.5"/>
+
+        <!-- Table name compartment -->
+        <rect x="40" y="420" width="420" height="30" fill="#fff" stroke="#000" stroke-width="1.5"/>
+        <text x="250" y="441" fill="#000" font-size="13" font-weight="700" text-anchor="middle" font-family="serif">field_test_records</text>
+        <text x="250" y="458" fill="#555" font-size="9" text-anchor="middle" font-family="serif" font-style="italic">&lt;&lt;table&gt;&gt;</text>
+
+        <line x1="40" y1="465" x2="460" y2="465" stroke="#000" stroke-width="1"/>
+
+        <!-- Inherited section -->
+        <text x="56" y="481" fill="#888" font-size="8" font-family="serif" font-style="italic">-- inherited from delivery_records (11 columns) --</text>
+        <text x="56" y="497" fill="#000" font-size="9" font-family="monospace" text-decoration="underline">+ id</text>
+        <text x="180" y="497" fill="#888" font-size="9" font-family="monospace">uuid PK, + created_at, tracking_number,</text>
+        <text x="56" y="512" fill="#888" font-size="9" font-family="monospace">  image_url, image_hash, latitude, longitude,</text>
+        <text x="56" y="527" fill="#888" font-size="9" font-family="monospace">  altitude, gps_accuracy_metres, captured_at,</text>
+        <text x="56" y="542" fill="#888" font-size="9" font-family="monospace">  accuracy_status</text>
+
+        <!-- Separator: Model Diagnostics -->
+        <line x1="40" y1="552" x2="460" y2="552" stroke="#000" stroke-width="0.5" stroke-dasharray="4,2"/>
+        <text x="250" y="568" fill="#000" font-size="8" font-weight="700" text-anchor="middle" font-family="serif">Model Diagnostics</text>
+
+        <text x="56" y="586" fill="#000" font-size="9" font-family="monospace">+ model_confidence</text>
+        <text x="250" y="586" fill="#000" font-size="9" font-family="monospace">float8</text>
+        <text x="355" y="586" fill="#000" font-size="9" font-family="monospace">NOT NULL, 0.0–1.0</text>
+
+        <text x="56" y="604" fill="#000" font-size="9" font-family="monospace">+ building_detected</text>
+        <text x="250" y="604" fill="#000" font-size="9" font-family="monospace">boolean</text>
+        <text x="355" y="604" fill="#000" font-size="9" font-family="monospace">NOT NULL</text>
+
+        <text x="56" y="622" fill="#000" font-size="9" font-family="monospace">+ detection_overridden</text>
+        <text x="250" y="622" fill="#000" font-size="9" font-family="monospace">boolean</text>
+        <text x="355" y="622" fill="#000" font-size="9" font-family="monospace">NOT NULL</text>
+
+        <text x="56" y="640" fill="#000" font-size="9" font-family="monospace">+ ground_truth_is_building</text>
+        <text x="250" y="640" fill="#000" font-size="9" font-family="monospace">boolean</text>
+        <text x="355" y="640" fill="#000" font-size="9" font-family="monospace">NULLABLE</text>
+
+        <!-- Separator: Timing Metrics -->
+        <line x1="40" y1="652" x2="460" y2="652" stroke="#000" stroke-width="0.5" stroke-dasharray="4,2"/>
+        <text x="250" y="668" fill="#000" font-size="8" font-weight="700" text-anchor="middle" font-family="serif">Timing Metrics</text>
+
+        <text x="56" y="686" fill="#000" font-size="9" font-family="monospace">+ barcode_scan_ms</text>
+        <text x="250" y="686" fill="#000" font-size="9" font-family="monospace">int4</text>
+        <text x="355" y="686" fill="#000" font-size="9" font-family="monospace">NULLABLE</text>
+
+        <text x="56" y="704" fill="#000" font-size="9" font-family="monospace">+ gps_fix_ms</text>
+        <text x="250" y="704" fill="#000" font-size="9" font-family="monospace">int4</text>
+        <text x="355" y="704" fill="#000" font-size="9" font-family="monospace">NULLABLE</text>
+
+        <text x="56" y="722" fill="#000" font-size="9" font-family="monospace">+ time_to_capture_ms</text>
+        <text x="250" y="722" fill="#000" font-size="9" font-family="monospace">int4</text>
+        <text x="355" y="722" fill="#000" font-size="9" font-family="monospace">NULLABLE</text>
+
+        <text x="56" y="740" fill="#000" font-size="9" font-family="monospace">+ exif_write_ms</text>
+        <text x="250" y="740" fill="#000" font-size="9" font-family="monospace">int4</text>
+        <text x="355" y="740" fill="#000" font-size="9" font-family="monospace">NULLABLE</text>
+
+        <text x="56" y="758" fill="#000" font-size="9" font-family="monospace">+ upload_latency_ms</text>
+        <text x="250" y="758" fill="#000" font-size="9" font-family="monospace">int4</text>
+        <text x="355" y="758" fill="#000" font-size="9" font-family="monospace">NULLABLE</text>
+
+        <!-- Separator: Device State -->
+        <line x1="40" y1="768" x2="460" y2="768" stroke="#000" stroke-width="0.5" stroke-dasharray="4,2"/>
+        <text x="250" y="784" fill="#000" font-size="8" font-weight="700" text-anchor="middle" font-family="serif">Device State</text>
+
+        <text x="56" y="802" fill="#000" font-size="9" font-family="monospace">+ upload_success</text>
+        <text x="250" y="802" fill="#000" font-size="9" font-family="monospace">boolean</text>
+        <text x="355" y="802" fill="#000" font-size="9" font-family="monospace">NOT NULL</text>
+
+        <text x="56" y="820" fill="#000" font-size="9" font-family="monospace">+ battery_level</text>
+        <text x="250" y="820" fill="#000" font-size="9" font-family="monospace">float8</text>
+        <text x="355" y="820" fill="#000" font-size="9" font-family="monospace">NULLABLE, 0.0–1.0</text>
+
+        <text x="56" y="838" fill="#000" font-size="9" font-family="monospace">+ gps_speed</text>
+        <text x="250" y="838" fill="#000" font-size="9" font-family="monospace">float8</text>
+        <text x="355" y="838" fill="#000" font-size="9" font-family="monospace">NULLABLE</text>
+
+        <text x="56" y="856" fill="#000" font-size="9" font-family="monospace">+ gps_heading</text>
+        <text x="250" y="856" fill="#000" font-size="9" font-family="monospace">float8</text>
+        <text x="355" y="856" fill="#000" font-size="9" font-family="monospace">NULLABLE</text>
+
+
+        <!-- ================================================================
+             STORAGE: delivery-proofs
+             ================================================================ -->
+        <rect x="600" y="80" width="380" height="120" rx="0" fill="#fff" stroke="#000" stroke-width="1.5"/>
+        <rect x="600" y="80" width="380" height="30" fill="#fff" stroke="#000" stroke-width="1.5"/>
+        <text x="790" y="101" fill="#000" font-size="13" font-weight="700" text-anchor="middle" font-family="serif">delivery-proofs</text>
+        <text x="790" y="118" fill="#555" font-size="9" text-anchor="middle" font-family="serif" font-style="italic">&lt;&lt;storage bucket&gt;&gt;</text>
+        <line x1="600" y1="125" x2="980" y2="125" stroke="#000" stroke-width="1"/>
+        <text x="616" y="142" fill="#000" font-size="9" font-family="monospace">+ object_key : text</text>
+        <text x="780" y="142" fill="#888" font-size="9" font-family="monospace">delivery_{unix_ms}.jpg</text>
+        <text x="616" y="160" fill="#000" font-size="9" font-family="monospace">+ content_type : text</text>
+        <text x="780" y="160" fill="#888" font-size="9" font-family="monospace">image/jpeg</text>
+        <text x="616" y="178" fill="#000" font-size="9" font-family="monospace">+ access : text</text>
+        <text x="780" y="178" fill="#888" font-size="9" font-family="monospace">public read</text>
+        <text x="616" y="194" fill="#888" font-size="8" font-family="serif" font-style="italic">Supabase Storage (S3-compatible)</text>
+
+
+        <!-- ================================================================
+             STORAGE: field-test-proofs
+             ================================================================ -->
+        <rect x="600" y="260" width="380" height="120" rx="0" fill="#fff" stroke="#000" stroke-width="1.5"/>
+        <rect x="600" y="260" width="380" height="30" fill="#fff" stroke="#000" stroke-width="1.5"/>
+        <text x="790" y="281" fill="#000" font-size="13" font-weight="700" text-anchor="middle" font-family="serif">field-test-proofs</text>
+        <text x="790" y="298" fill="#555" font-size="9" text-anchor="middle" font-family="serif" font-style="italic">&lt;&lt;storage bucket&gt;&gt;</text>
+        <line x1="600" y1="305" x2="980" y2="305" stroke="#000" stroke-width="1"/>
+        <text x="616" y="322" fill="#000" font-size="9" font-family="monospace">+ object_key : text</text>
+        <text x="780" y="322" fill="#888" font-size="9" font-family="monospace">field_test_{unix_ms}.jpg</text>
+        <text x="616" y="340" fill="#000" font-size="9" font-family="monospace">+ content_type : text</text>
+        <text x="780" y="340" fill="#888" font-size="9" font-family="monospace">image/jpeg</text>
+        <text x="616" y="358" fill="#000" font-size="9" font-family="monospace">+ access : text</text>
+        <text x="780" y="358" fill="#888" font-size="9" font-family="monospace">public read</text>
+        <text x="616" y="374" fill="#888" font-size="8" font-family="serif" font-style="italic">Supabase Storage (S3-compatible)</text>
+
+
+        <!-- ================================================================
+             EXIF METADATA (embedded in image)
+             ================================================================ -->
+        <rect x="600" y="450" width="380" height="300" rx="0" fill="#fff" stroke="#000" stroke-width="1.5"/>
+        <rect x="600" y="450" width="380" height="30" fill="#fff" stroke="#000" stroke-width="1.5"/>
+        <text x="790" y="471" fill="#000" font-size="13" font-weight="700" text-anchor="middle" font-family="serif">EXIFMetadata</text>
+        <text x="790" y="488" fill="#555" font-size="9" text-anchor="middle" font-family="serif" font-style="italic">&lt;&lt;embedded in JPEG&gt;&gt;</text>
+        <line x1="600" y1="495" x2="980" y2="495" stroke="#000" stroke-width="1"/>
+
+        <!-- Headers -->
+        <text x="616" y="511" fill="#000" font-size="8" font-weight="700" font-family="monospace">Tag</text>
+        <text x="775" y="511" fill="#000" font-size="8" font-weight="700" font-family="monospace">IFD</text>
+        <text x="870" y="511" fill="#000" font-size="8" font-weight="700" font-family="monospace">Format</text>
+        <line x1="610" y1="516" x2="970" y2="516" stroke="#000" stroke-width="0.3"/>
+
+        <text x="616" y="533" fill="#000" font-size="9" font-family="monospace">DateTimeOriginal</text>
+        <text x="775" y="533" fill="#000" font-size="9" font-family="monospace">Exif</text>
+        <text x="870" y="533" fill="#000" font-size="9" font-family="monospace">ASCII (20)</text>
+
+        <text x="616" y="551" fill="#000" font-size="9" font-family="monospace">DateTimeDigitized</text>
+        <text x="775" y="551" fill="#000" font-size="9" font-family="monospace">Exif</text>
+        <text x="870" y="551" fill="#000" font-size="9" font-family="monospace">ASCII (20)</text>
+
+        <text x="616" y="569" fill="#000" font-size="9" font-family="monospace">DateTime</text>
+        <text x="775" y="569" fill="#000" font-size="9" font-family="monospace">IFD0</text>
+        <text x="870" y="569" fill="#000" font-size="9" font-family="monospace">ASCII (20)</text>
+
+        <line x1="610" y1="578" x2="970" y2="578" stroke="#000" stroke-width="0.3"/>
+
+        <text x="616" y="595" fill="#000" font-size="9" font-family="monospace">GPSLatitude</text>
+        <text x="775" y="595" fill="#000" font-size="9" font-family="monospace">GPS</text>
+        <text x="870" y="595" fill="#000" font-size="9" font-family="monospace">RATIONAL (deg)</text>
+
+        <text x="616" y="613" fill="#000" font-size="9" font-family="monospace">GPSLongitude</text>
+        <text x="775" y="613" fill="#000" font-size="9" font-family="monospace">GPS</text>
+        <text x="870" y="613" fill="#000" font-size="9" font-family="monospace">RATIONAL (deg)</text>
+
+        <text x="616" y="631" fill="#000" font-size="9" font-family="monospace">GPSAltitude</text>
+        <text x="775" y="631" fill="#000" font-size="9" font-family="monospace">GPS</text>
+        <text x="870" y="631" fill="#000" font-size="9" font-family="monospace">RATIONAL (m)</text>
+
+        <text x="616" y="649" fill="#000" font-size="9" font-family="monospace">GPSAltitudeRef</text>
+        <text x="775" y="649" fill="#000" font-size="9" font-family="monospace">GPS</text>
+        <text x="870" y="649" fill="#000" font-size="9" font-family="monospace">BYTE (0|1)</text>
+
+        <text x="616" y="667" fill="#000" font-size="9" font-family="monospace">GPSDateStamp</text>
+        <text x="775" y="667" fill="#000" font-size="9" font-family="monospace">GPS</text>
+        <text x="870" y="667" fill="#000" font-size="9" font-family="monospace">ASCII (11)</text>
+
+        <text x="616" y="685" fill="#000" font-size="9" font-family="monospace">GPSTimeStamp</text>
+        <text x="775" y="685" fill="#000" font-size="9" font-family="monospace">GPS</text>
+        <text x="870" y="685" fill="#000" font-size="9" font-family="monospace">ASCII (8)</text>
+
+        <line x1="610" y1="694" x2="970" y2="694" stroke="#000" stroke-width="0.3"/>
+        <text x="616" y="712" fill="#888" font-size="8" font-family="serif" font-style="italic">9 tags written by buildExifFromCoordinate()</text>
+        <text x="616" y="728" fill="#888" font-size="8" font-family="serif" font-style="italic">GPS times in UTC; DateTimeOriginal in device local time</text>
+        <text x="616" y="744" fill="#888" font-size="8" font-family="serif" font-style="italic">30 tags defined in EXIFMetadata interface total</text>
+
+
+        <!-- ================================================================
+             RELATIONSHIPS
+             ================================================================ -->
+
+        <!-- delivery_records.image_url ——1———1——> delivery-proofs -->
+        <line x1="510" y1="179" x2="598" y2="140" stroke="#000" stroke-width="1" marker-end="url(#arrow)"/>
+        <text x="540" y="148" fill="#000" font-size="8" font-family="serif">image_url</text>
+        <text x="520" y="166" fill="#000" font-size="8" font-family="serif" font-weight="700">1</text>
+        <text x="585" y="136" fill="#000" font-size="8" font-family="serif" font-weight="700">1</text>
+
+        <!-- field_test_records.image_url ——1———1——> field-test-proofs -->
+        <line x1="460" y1="500" x2="598" y2="320" stroke="#000" stroke-width="1" marker-end="url(#arrow)"/>
+        <text x="510" y="396" fill="#000" font-size="8" font-family="serif">image_url</text>
+        <text x="476" y="497" fill="#000" font-size="8" font-family="serif" font-weight="700">1</text>
+        <text x="585" y="322" fill="#000" font-size="8" font-family="serif" font-weight="700">1</text>
+
+        <!-- Superset / generalisation arrow (UML triangle) -->
+        <line x1="250" y1="350" x2="250" y2="418" stroke="#000" stroke-width="1"/>
+        <!-- UML generalisation triangle (open arrowhead pointing UP at parent) -->
+        <polygon points="250,355 242,370 258,370" fill="#fff" stroke="#000" stroke-width="1"/>
+        <text x="264" y="398" fill="#000" font-size="8" font-family="serif" font-style="italic">{superset}</text>
+
+        <!-- EXIF embedded-in storage objects (dashed dependency) -->
+        <line x1="790" y1="380" x2="790" y2="448" stroke="#000" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+        <text x="798" y="418" fill="#000" font-size="8" font-family="serif" font-style="italic">&lt;&lt;embedded in&gt;&gt;</text>
+
+      </svg>
+    </div>
+
+    <p class="caption">Figure 4.x: Entity Relationship Diagram — Supabase PostgreSQL tables and object storage buckets.
+      The generalisation arrow indicates that field_test_records is a structural superset of delivery_records.
+      Dashed dependency shows EXIF metadata embedded within stored JPEG files.</p>
+  </div>
+</body>
+</html>
